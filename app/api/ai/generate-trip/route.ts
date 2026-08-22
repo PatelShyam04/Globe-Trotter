@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getDestinationPhoto } from '@/lib/photos'
 
 interface TripPlanPayload {
   destination: string
@@ -180,6 +181,7 @@ export async function POST(req: NextRequest) {
           description: tripDescription,
           startDate,
           endDate,
+          coverPhoto: getDestinationPhoto(destination),
           totalBudget: suggestedBudget,
           isPublic: false,
           stops: {

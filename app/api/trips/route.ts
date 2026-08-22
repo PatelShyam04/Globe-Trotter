@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getDestinationPhoto } from '@/lib/photos'
 
 export async function GET() {
   try {
@@ -35,6 +36,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Trip name is required' }, { status: 400 })
     }
 
+    const resolvedPhoto = coverPhoto || getDestinationPhoto(name)
+
     const trip = await prisma.trip.create({
       data: {
         userId: session.user.id,
@@ -42,7 +45,7 @@ export async function POST(request: NextRequest) {
         description,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
-        coverPhoto,
+        coverPhoto: resolvedPhoto,
         isPublic: isPublic ?? false,
         totalBudget: totalBudget ?? 0,
       },

@@ -240,25 +240,52 @@ export default function DashboardClient({ userName, trips, cities, totalBudget }
 
         {/* City cards inside selected region */}
         {selectedRegion && (
-          <div className="pt-2 animate-in">
-            <p className="text-xs text-muted mb-3">
-              Destinations in <strong>{selectedRegion}</strong>:
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="pt-2 animate-in space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted">
+                Showing top destinations & experiences in <strong className="text-primary">{selectedRegion}</strong>:
+              </p>
+              <Link
+                href={`/explore?region=${encodeURIComponent(selectedRegion)}`}
+                className="text-xs text-primary hover:underline font-bold flex items-center gap-1"
+              >
+                Explore all {selectedRegion} activities <ArrowRight size={13} />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
               {filteredCities.map((city) => (
-                <Link
+                <div
                   key={city.id}
-                  href={`/trips/create?destination=${encodeURIComponent(city.name)}`}
-                  className="card !p-3.5 flex items-center justify-between hover:border-primary/50 transition-colors group"
+                  className="card !p-3 hover:border-primary/50 transition-all duration-300 shadow-md group flex flex-col justify-between"
                 >
-                  <div>
-                    <p className="font-semibold text-sm">{getCountryFlag(city.country)} {city.name}</p>
-                    <p className="text-muted text-xs">{city.country}</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="font-heading font-bold text-sm text-text group-hover:text-primary transition-colors">
+                        {getCountryFlag(city.country)} {city.name}
+                      </p>
+                      <p className="text-muted text-[11px]">{city.country}</p>
+                    </div>
+                    <span className="badge bg-secondary/15 text-secondary text-[10px] font-bold">
+                      {'$'.repeat(Math.min(3, Math.max(1, Math.round(city.costIndex))))}
+                    </span>
                   </div>
-                  <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity font-semibold">
-                    Plan →
-                  </span>
-                </Link>
+
+                  <div className="flex items-center gap-1.5 pt-2 border-t border-border/50">
+                    <Link
+                      href={`/trips/create?destination=${encodeURIComponent(city.name)}`}
+                      className="btn-primary !py-1 !px-2.5 text-[11px] font-bold flex-1 text-center"
+                    >
+                      ⚡ Auto-Plan
+                    </Link>
+                    <Link
+                      href={`/explore?q=${encodeURIComponent(city.name)}`}
+                      className="btn-secondary !py-1 !px-2.5 text-[11px] font-semibold text-center"
+                    >
+                      Activities
+                    </Link>
+                  </div>
+                </div>
               ))}
             </div>
           </div>

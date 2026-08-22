@@ -24,6 +24,7 @@ import { formatCurrency, formatDate, getCountryFlag } from '@/lib/helpers'
 import toast from 'react-hot-toast'
 import { signOut, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { getDestinationPhoto } from '@/lib/photos'
 
 interface UserData {
   id: string
@@ -161,6 +162,7 @@ export default function ProfileClient({ user: initialUser, trips }: Props) {
       .flatMap((s) => s.activities)
       .reduce((sum, a) => sum + a.cost, 0)
     const citiesCount = trip.stops.length
+    const coverUrl = trip.coverPhoto || getDestinationPhoto(trip.name || trip.stops[0]?.cityName)
 
     return (
       <div
@@ -168,16 +170,15 @@ export default function ProfileClient({ user: initialUser, trips }: Props) {
         className="card !p-5 border border-border hover:border-primary/50 transition-all shadow-lg flex flex-col justify-between group"
       >
         <div className="space-y-2">
-          {/* Cover or placeholder */}
+          {/* Cover */}
           <div
             className="h-32 rounded-xl bg-gradient-to-br from-primary/20 to-surface2 relative overflow-hidden flex items-center justify-center mb-3"
-            style={
-              trip.coverPhoto
-                ? { backgroundImage: `url(${trip.coverPhoto})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                : {}
-            }
+            style={{
+              backgroundImage: `url(${coverUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
           >
-            {!trip.coverPhoto && <span className="text-4xl">🌍</span>}
             <div className="absolute inset-0 bg-gradient-to-t from-surface/80 to-transparent" />
             <span className="absolute bottom-2 left-2 badge bg-surface/90 text-text text-xs border border-border">
               {citiesCount} {citiesCount === 1 ? 'city' : 'cities'}
