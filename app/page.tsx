@@ -1,7 +1,16 @@
+import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Globe, MapPin, Wallet, Share2, ArrowRight, Star } from 'lucide-react'
+import { Globe, MapPin, Wallet, Share2, ArrowRight, Star, Compass } from 'lucide-react'
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const session = await auth()
+
+  // If user is already logged in, redirect them directly to the main dashboard!
+  if (session?.user) {
+    redirect('/dashboard')
+  }
+
   return (
     <div className="min-h-screen bg-bg overflow-hidden">
       {/* Gradient orbs */}
@@ -14,7 +23,7 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
-          <Globe className="text-primary" size={28} />
+          <Compass className="text-primary" size={28} />
           <span className="font-heading font-bold text-xl">GlobeTrotter</span>
         </div>
         <div className="flex items-center gap-4">
@@ -94,7 +103,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-border py-8 px-6 text-center text-muted text-sm">
         <div className="flex items-center justify-center gap-2">
-          <Globe size={16} className="text-primary" />
+          <Compass size={16} className="text-primary" />
           GlobeTrotter — Built for Hackathon 2026
         </div>
       </footer>
