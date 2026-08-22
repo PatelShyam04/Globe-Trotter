@@ -38,10 +38,9 @@ export default function TripCard({ trip }: { trip: Trip }) {
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault()
-    if (!confirm('Delete this trip? This cannot be undone.')) return
     const res = await fetch(`/api/trips/${trip.id}`, { method: 'DELETE' })
     if (res.ok) {
-      toast.success('Trip deleted')
+      toast.success(`"${trip.name}" deleted`)
       router.refresh()
     } else {
       toast.error('Failed to delete trip')

@@ -70,10 +70,9 @@ export default function TripsClient({ trips: initialTrips }: Props) {
   }, [searchInput])
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
     const res = await fetch(`/api/trips/${id}`, { method: 'DELETE' })
     if (res.ok) {
-      toast.success('Trip deleted')
+      toast.success(`"${name}" deleted successfully`)
       setTrips((prev) => prev.filter((t) => t.id !== id))
       router.refresh()
     } else {

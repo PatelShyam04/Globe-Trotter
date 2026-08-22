@@ -107,7 +107,11 @@ export default function CreateTripPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) {
-      toast.error('Trip name is required')
+      toast.error('Please enter a trip name')
+      return
+    }
+    if (form.startDate && form.endDate && new Date(form.endDate) < new Date(form.startDate)) {
+      toast.error('End date cannot be earlier than start date')
       return
     }
 

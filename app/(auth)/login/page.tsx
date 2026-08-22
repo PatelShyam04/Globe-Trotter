@@ -16,26 +16,35 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !password) {
-      toast.error('Please fill in all fields')
+    if (!email.trim()) {
+      toast.error('Please enter your email address')
+      return
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Please enter a valid email address (e.g. name@example.com)')
+      return
+    }
+    if (!password) {
+      toast.error('Please enter your password')
       return
     }
     setLoading(true)
     try {
       const res = await signIn('credentials', {
-        email,
+        email: email.trim(),
         password,
         redirect: false,
       })
       if (res?.error) {
-        toast.error('Invalid email or password')
+        toast.error('Incorrect email or password. Please try again.')
       } else {
         toast.success('Welcome back!')
         router.push('/dashboard')
         router.refresh()
       }
     } catch {
-      toast.error('Something went wrong')
+      toast.error('Connection error. Please try again.')
     } finally {
       setLoading(false)
     }

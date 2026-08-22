@@ -102,7 +102,6 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
   }
 
   const handleDeleteStop = async (stopId: string) => {
-    if (!confirm('Remove this section and all associated activities?')) return
     const res = await fetch(`/api/stops/${stopId}`, { method: 'DELETE' })
     if (res.ok) {
       toast.success('Section removed')

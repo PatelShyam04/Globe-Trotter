@@ -163,7 +163,6 @@ export default function AdminClient({ cities, cityUsageMap, activities, currentU
   }
 
   const handleDeleteUser = async (userId: string, name: string) => {
-    if (!confirm(`Permanently delete user "${name}"? This removes all their trips and data.`)) return
     const res = await fetch('/api/admin/users', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -171,7 +170,7 @@ export default function AdminClient({ cities, cityUsageMap, activities, currentU
     })
     const data = await res.json()
     if (res.ok) {
-      toast.success('User deleted successfully')
+      toast.success(`User "${name}" deleted`)
       setUsers(prev => prev.filter(u => u.id !== userId))
       setTotalUsers(prev => prev - 1)
     } else {
@@ -180,10 +179,6 @@ export default function AdminClient({ cities, cityUsageMap, activities, currentU
   }
 
   const handleToggleRole = async (userId: string, currentRole: string) => {
-    const action = currentRole === 'admin' ? 'Remove admin access from' : 'Grant admin access to'
-    const target = users.find(u => u.id === userId)
-    if (!confirm(`${action} "${target?.name || target?.email}"?`)) return
-
     const res = await fetch(`/api/admin/users/${userId}/role`, { method: 'PUT' })
     const data = await res.json()
     if (res.ok) {

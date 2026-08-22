@@ -58,16 +58,29 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.firstName.trim() || !form.email.trim() || !form.password) {
-      toast.error('First name, email, and password are required')
+    if (!form.firstName.trim()) {
+      toast.error('Please enter your first name')
+      return
+    }
+    if (!form.email.trim()) {
+      toast.error('Please enter your email address')
+      return
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(form.email.trim())) {
+      toast.error('Please enter a valid email address (e.g. name@example.com)')
+      return
+    }
+    if (!form.password) {
+      toast.error('Please create a password')
       return
     }
     if (form.password.length < 6) {
-      toast.error('Password must be at least 6 characters')
+      toast.error('Password must be at least 6 characters long')
       return
     }
     if (form.confirmPassword && form.password !== form.confirmPassword) {
-      toast.error('Passwords do not match')
+      toast.error('Passwords do not match. Please re-type your password.')
       return
     }
 
