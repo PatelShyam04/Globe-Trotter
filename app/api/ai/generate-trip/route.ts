@@ -139,7 +139,7 @@ Return ONLY valid JSON array in this exact format with no extra text or markdown
   }
 ]`
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -154,7 +154,15 @@ Return ONLY valid JSON array in this exact format with no extra text or markdown
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim()
         const parsed = JSON.parse(cleanJson)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed
+          return parsed.map((item: any) => ({
+            name: item.name || 'Iconic Sightseeing',
+            category: ['sightseeing', 'food', 'adventure', 'transport', 'stay'].includes(item.category?.toLowerCase())
+              ? item.category.toLowerCase()
+              : 'sightseeing',
+            cost: typeof item.cost === 'number' ? item.cost : parseInt(item.cost) || 20,
+            scheduledTime: item.scheduledTime || '10:00 AM',
+            dayNumber: typeof item.dayNumber === 'number' ? item.dayNumber : parseInt(item.dayNumber) || 1,
+          }))
         }
       }
     }

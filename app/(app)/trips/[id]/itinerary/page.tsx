@@ -76,7 +76,7 @@ export default function ItineraryPage() {
   const [cityModalOpen, setCityModalOpen] = useState(false)
   const [actModalOpen, setActModalOpen] = useState<string | null>(null)
 
-  // Edit Modals State
+  // Edit Section / Stop Modal State
   const [editingStop, setEditingStop] = useState<Stop | null>(null)
   const [stopForm, setStopForm] = useState({
     cityName: '',
@@ -85,6 +85,7 @@ export default function ItineraryPage() {
     departureDate: '',
   })
 
+  // Edit Trip Modal State
   const [isTripEditOpen, setIsTripEditOpen] = useState(false)
   const [tripForm, setTripForm] = useState({
     name: '',
@@ -93,6 +94,18 @@ export default function ItineraryPage() {
     totalBudget: 0,
     description: '',
   })
+
+  // Edit Activity Modal State
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null)
+  const [actForm, setActForm] = useState({
+    name: '',
+    category: 'sightseeing',
+    cost: 0,
+    scheduledTime: '',
+    dayNumber: 1,
+    description: '',
+  })
+
   const [savingEdit, setSavingEdit] = useState(false)
 
   const fetchTrip = useCallback(async () => {
@@ -234,6 +247,49 @@ export default function ItineraryPage() {
       }
     } catch {
       toast.error('Error updating trip')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const handleOpenEditActivity = (act: Activity) => {
+    setEditingActivity(act)
+    setActForm({
+      name: act.name || '',
+      category: act.category || 'sightseeing',
+      cost: act.cost || 0,
+      scheduledTime: act.scheduledTime || '',
+      dayNumber: act.dayNumber || 1,
+      description: act.description || '',
+    })
+  }
+
+  const handleSaveActivity = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingActivity) return
+    setSavingEdit(true)
+    try {
+      const res = await fetch(`/api/activities/${editingActivity.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: actForm.name,
+          category: actForm.category,
+          cost: parseFloat(actForm.cost.toString()) || 0,
+          scheduledTime: actForm.scheduledTime || null,
+          dayNumber: parseInt(actForm.dayNumber.toString()) || 1,
+          description: actForm.description || null,
+        }),
+      })
+      if (res.ok) {
+        toast.success('Activity updated!')
+        setEditingActivity(null)
+        fetchTrip()
+      } else {
+        toast.error('Failed to update activity')
+      }
+    } catch {
+      toast.error('Error updating activity')
     } finally {
       setSavingEdit(false)
     }
@@ -478,13 +534,22 @@ export default function ItineraryPage() {
                           <span className="text-secondary font-bold text-sm">
                             {formatCurrency(act.cost)}
                           </span>
-                          <button
-                            onClick={() => handleDeleteActivity(act.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-danger/10 text-danger rounded-lg transition-all cursor-pointer"
-                            title="Remove item"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <button
+                              onClick={() => handleOpenEditActivity(act)}
+                              className="p-1 hover:bg-surface text-primary rounded-lg transition-all cursor-pointer"
+                              title="Edit Activity"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteActivity(act.id)}
+                              className="p-1 hover:bg-danger/10 text-danger rounded-lg transition-all cursor-pointer"
+                              title="Remove item"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                       )
                     })}
@@ -591,6 +656,123 @@ export default function ItineraryPage() {
                 >
                   {savingEdit ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                   Save Section
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Activity Modal */}
+      {editingActivity && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="card max-w-md w-full p-6 space-y-4 border border-border shadow-2xl animate-in">
+            <div className="flex items-center justify-between border-b border-border/70 pb-3">
+              <h3 className="font-heading font-bold text-lg text-text flex items-center gap-2">
+                <Edit2 size={18} className="text-primary" />
+                Edit Activity Item
+              </h3>
+              <button
+                onClick={() => setEditingActivity(null)}
+                className="p-1 hover:bg-surface2 rounded-lg text-muted hover:text-text cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveActivity} className="space-y-3.5">
+              <div>
+                <label className="label-base text-xs font-semibold">Activity Name / Attraction:</label>
+                <input
+                  type="text"
+                  required
+                  value={actForm.name}
+                  onChange={(e) => setActForm((p) => ({ ...p, name: e.target.value }))}
+                  className="input-base !py-2 text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label-base text-xs font-semibold">Category:</label>
+                  <select
+                    value={actForm.category}
+                    onChange={(e) => setActForm((p) => ({ ...p, category: e.target.value }))}
+                    className="input-base !py-2 text-xs cursor-pointer"
+                  >
+                    <option value="sightseeing">🏛️ Sightseeing</option>
+                    <option value="food">🍜 Food & Dining</option>
+                    <option value="adventure">🏄 Adventure</option>
+                    <option value="stay">🏨 Accommodation</option>
+                    <option value="transport">🚆 Transport</option>
+                    <option value="other">✨ Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label-base text-xs font-semibold">Cost ($ USD):</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="5"
+                    value={actForm.cost}
+                    onChange={(e) => setActForm((p) => ({ ...p, cost: parseFloat(e.target.value) || 0 }))}
+                    className="input-base !py-2 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label-base text-xs font-semibold">Scheduled Time:</label>
+                  <input
+                    type="text"
+                    value={actForm.scheduledTime}
+                    onChange={(e) => setActForm((p) => ({ ...p, scheduledTime: e.target.value }))}
+                    placeholder="e.g. 10:00 AM"
+                    className="input-base !py-2 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="label-base text-xs font-semibold">Day Number:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={actForm.dayNumber}
+                    onChange={(e) => setActForm((p) => ({ ...p, dayNumber: parseInt(e.target.value) || 1 }))}
+                    className="input-base !py-2 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label-base text-xs font-semibold">Notes / Description:</label>
+                <textarea
+                  rows={2}
+                  value={actForm.description}
+                  onChange={(e) => setActForm((p) => ({ ...p, description: e.target.value }))}
+                  className="input-base !py-2 text-xs resize-none"
+                  placeholder="Optional notes or address..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingActivity(null)}
+                  className="btn-secondary text-xs !py-2 !px-3.5 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="btn-primary text-xs !py-2 !px-4 font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  {savingEdit ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                  Save Activity
                 </button>
               </div>
             </form>
