@@ -8,11 +8,17 @@ export async function PUT(request: NextRequest) {
     const session = await auth()
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { name, image, currentPassword, newPassword } = await request.json()
+    const { name, firstName, lastName, phone, city, country, bio, image, currentPassword, newPassword } = await request.json()
 
-    const updateData: Record<string, string> = {}
-    if (name) updateData.name = name
-    if (image) updateData.image = image
+    const updateData: Record<string, string | null> = {}
+    if (name !== undefined) updateData.name = name
+    if (firstName !== undefined) updateData.firstName = firstName
+    if (lastName !== undefined) updateData.lastName = lastName
+    if (phone !== undefined) updateData.phone = phone
+    if (city !== undefined) updateData.city = city
+    if (country !== undefined) updateData.country = country
+    if (bio !== undefined) updateData.bio = bio
+    if (image !== undefined) updateData.image = image
 
     if (newPassword) {
       const user = await prisma.user.findUnique({ where: { id: session.user.id } })
@@ -24,8 +30,19 @@ export async function PUT(request: NextRequest) {
 
     const updated = await prisma.user.update({
       where: { id: session.user.id },
-      data: updateData,
-      select: { id: true, name: true, email: true, image: true },
+      data: updateData as any,
+      select: {
+        id: true,
+        name: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        city: true,
+        country: true,
+        bio: true,
+        image: true,
+      },
     })
 
     return NextResponse.json(updated)

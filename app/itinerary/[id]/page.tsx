@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Compass,
   Share2,
@@ -11,8 +12,9 @@ import {
   Clock,
   Loader2,
   Lock,
-  ArrowLeft,
+  Copy,
   Sparkles,
+  Check,
 } from 'lucide-react'
 import { formatCurrency, formatDate, getCountryFlag, CATEGORY_CONFIG } from '@/lib/helpers'
 import toast from 'react-hot-toast'
@@ -47,8 +49,10 @@ interface Trip {
 }
 
 export default function PublicItineraryPage({ params }: { params: { id: string } }) {
+  const router = useRouter()
   const [trip, setTrip] = useState<Trip | null>(null)
   const [loading, setLoading] = useState(true)
+  const [cloning, setCloning] = useState(false)
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
@@ -71,7 +75,27 @@ export default function PublicItineraryPage({ params }: { params: { id: string }
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href)
-    toast.success('Link copied!')
+    toast.success('Link copied to clipboard!')
+  }
+
+  const handleCopyTrip = async () => {
+    setCloning(true)
+    try {
+      const res = await fetch(`/api/trips/${params.id}/clone`, {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (res.ok && data.tripId) {
+        toast.success('Trip copied to your account!')
+        router.push(`/trips/${data.tripId}/itinerary`)
+      } else {
+        toast.error(data.error || 'Please sign in to copy trip')
+      }
+    } catch {
+      toast.error('Failed to copy trip')
+    } finally {
+      setCloning(false)
+    }
   }
 
   if (loading) {
@@ -118,7 +142,7 @@ export default function PublicItineraryPage({ params }: { params: { id: string }
           <Compass size={24} className="text-primary" />
           <span className="font-heading font-black text-lg text-text">GlobeTrotter</span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={copyLink} className="btn-secondary flex items-center gap-1.5 text-xs py-2 px-3">
             <Link2 size={14} /> Copy Link
           </button>
@@ -126,7 +150,7 @@ export default function PublicItineraryPage({ params }: { params: { id: string }
             onClick={() =>
               window.open(
                 `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-                  'Check out my trip: ' + trip.name + ' on GlobeTrotter'
+                  'Check out this trip: ' + trip.name + ' on GlobeTrotter'
                 )}&url=${encodeURIComponent(window.location.href)}`,
                 '_blank'
               )
@@ -135,9 +159,18 @@ export default function PublicItineraryPage({ params }: { params: { id: string }
           >
             𝕏 Tweet
           </button>
-          <Link href="/trips/create" className="btn-primary text-xs py-2 px-4 font-semibold">
-            Plan My Trip
-          </Link>
+          <button
+            onClick={handleCopyTrip}
+            disabled={cloning}
+            className="btn-primary text-xs py-2 px-4 font-semibold flex items-center gap-1.5 shadow-sm shadow-primary/20"
+          >
+            {cloning ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Copy size={13} />
+            )}
+            Copy Trip
+          </button>
         </div>
       </header>
 
@@ -245,17 +278,26 @@ export default function PublicItineraryPage({ params }: { params: { id: string }
           ))}
         </div>
 
-        {/* CTA */}
+        {/* CTA Box */}
         <div className="card text-center py-10 border border-border shadow-xl space-y-3">
           <Sparkles size={36} className="text-primary mx-auto" />
-          <h3 className="font-heading font-bold text-2xl text-text">Inspired? Plan your own trip!</h3>
+          <h3 className="font-heading font-bold text-2xl text-text">Inspired? Clone this trip!</h3>
           <p className="text-muted text-sm max-w-md mx-auto">
-            Join GlobeTrotter to customize this itinerary or start creating your own adventure.
+            Click &quot;Copy Trip&quot; to copy all destinations, stops, and activities into your account to customize.
           </p>
           <div className="pt-2">
-            <Link href="/trips/create" className="btn-primary inline-flex items-center gap-2 py-3 px-8 text-sm font-semibold">
-              Plan My Trip Now →
-            </Link>
+            <button
+              onClick={handleCopyTrip}
+              disabled={cloning}
+              className="btn-primary inline-flex items-center gap-2 py-3 px-8 text-sm font-semibold shadow-lg shadow-primary/20"
+            >
+              {cloning ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Copy size={16} />
+              )}
+              Copy Trip to My Account →
+            </button>
           </div>
         </div>
       </div>
