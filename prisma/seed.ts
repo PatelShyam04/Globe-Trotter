@@ -1,6 +1,11 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
 
-const prisma = new PrismaClient()
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:1442007@localhost:5432/globetrotter?schema=public'
+const pool = new Pool({ connectionString })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter } as any)
 
 const cities = [
   { name: 'Paris', country: 'France', region: 'Europe', costIndex: 3.2, popularity: 98, description: 'The City of Light' },
@@ -47,5 +52,11 @@ async function main() {
 }
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect())
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+    await pool.end()
+  })
