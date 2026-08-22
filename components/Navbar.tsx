@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { signOut } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import { useState } from 'react'
 import {
   Globe,
@@ -19,12 +19,22 @@ import {
 } from 'lucide-react'
 
 interface NavbarProps {
-  user?: { name?: string | null; email?: string | null; image?: string | null }
+  user?: {
+    name?: string | null
+    email?: string | null
+    image?: string | null
+    role?: string | null
+  }
 }
 
-export default function Navbar({ user }: NavbarProps) {
+export default function Navbar({ user: initialUser }: NavbarProps) {
   const pathname = usePathname()
+  const { data: session } = useSession()
   const [dropdownOpen, setDropdownOpen] = useState(false)
+
+  // Use session user or fallback to initial prop
+  const currentUser = (session?.user as any) || initialUser
+  const isAdmin = currentUser?.role === 'admin'
 
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -32,7 +42,7 @@ export default function Navbar({ user }: NavbarProps) {
     { href: '/explore', label: 'Explore', icon: Search },
     { href: '/community', label: 'Community', icon: Users },
     { href: '/calendar', label: 'Calendar', icon: CalendarIcon },
-    { href: '/admin', label: 'Admin', icon: ShieldCheck },
+    ...(isAdmin ? [{ href: '/admin', label: 'Admin', icon: ShieldCheck }] : []),
   ]
 
   return (
@@ -87,10 +97,10 @@ export default function Navbar({ user }: NavbarProps) {
               aria-label="User menu"
             >
               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-primary/30 to-secondary/30 border-2 border-primary/50 flex items-center justify-center text-sm font-bold text-primary overflow-hidden shadow-inner">
-                {user?.image ? (
-                  <img src={user.image} alt={user.name || 'User'} className="w-full h-full object-cover" />
+                {currentUser?.image ? (
+                  <img src={currentUser.image} alt={currentUser.name || 'User'} className="w-full h-full object-cover" />
                 ) : (
-                  user?.name?.charAt(0)?.toUpperCase() || 'U'
+                  currentUser?.name?.charAt(0)?.toUpperCase() || 'U'
                 )}
               </div>
             </button>
@@ -101,8 +111,15 @@ export default function Navbar({ user }: NavbarProps) {
                 onClick={() => setDropdownOpen(false)}
               >
                 <div className="px-4 py-2 border-b border-border">
-                  <p className="font-semibold text-sm truncate">{user?.name || 'Explorer'}</p>
-                  <p className="text-xs text-muted truncate">{user?.email}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-sm truncate">{currentUser?.name || 'Explorer'}</p>
+                    {isAdmin && (
+                      <span className="badge bg-purple-500/20 text-purple-300 text-[10px] font-bold">
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted truncate">{currentUser?.email}</p>
                 </div>
                 <Link
                   href="/dashboard"
@@ -134,12 +151,14 @@ export default function Navbar({ user }: NavbarProps) {
                 >
                   <CalendarIcon size={15} /> Calendar
                 </Link>
-                <Link
-                  href="/admin"
-                  className="flex items-center gap-2.5 px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-colors"
-                >
-                  <ShieldCheck size={15} /> Admin Panel
-                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-2.5 px-4 py-2 text-sm text-purple-300 hover:text-purple-200 hover:bg-purple-500/10 transition-colors"
+                  >
+                    <ShieldCheck size={15} /> Admin Panel
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   className="flex items-center gap-2.5 px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-colors"
