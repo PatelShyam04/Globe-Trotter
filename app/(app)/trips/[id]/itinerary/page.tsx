@@ -4,8 +4,23 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import {
-  Plus, Trash2, ChevronUp, ChevronDown, MapPin, Clock,
-  DollarSign, Eye, BarChart2, Calendar, Share2, Loader2, ArrowLeft
+  Plus,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  MapPin,
+  Clock,
+  DollarSign,
+  Eye,
+  BarChart2,
+  Calendar,
+  Loader2,
+  ArrowLeft,
+  Sparkles,
+  Plane,
+  Hotel,
+  Compass,
+  FileText,
 } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency, formatDate, getCountryFlag, CATEGORY_CONFIG } from '@/lib/helpers'
@@ -13,60 +28,88 @@ import CitySearchModal from '@/components/CitySearchModal'
 import ActivityModal from '@/components/ActivityModal'
 
 interface Activity {
-  id: string; name: string; category: string; cost: number;
-  scheduledTime?: string | null; dayNumber: number; durationHours?: number | null; description?: string | null
-}
-interface Stop {
-  id: string; cityName: string; country?: string | null;
-  arrivalDate?: string | null; departureDate?: string | null; orderIndex: number; activities: Activity[]
-}
-interface Trip {
-  id: string; name: string; startDate?: string | null; endDate?: string | null;
-  isPublic: boolean; totalBudget: number; stops: Stop[]
+  id: string
+  name: string
+  category: string
+  cost: number
+  scheduledTime?: string | null
+  dayNumber: number
+  durationHours?: number | null
+  description?: string | null
 }
 
-export default function ItineraryBuilder({ params }: { params: { id: string } }) {
+interface Stop {
+  id: string
+  cityName: string
+  country?: string | null
+  arrivalDate?: string | null
+  departureDate?: string | null
+  orderIndex: number
+  costIndex: number
+  activities: Activity[]
+}
+
+interface Trip {
+  id: string
+  name: string
+  description?: string | null
+  startDate?: string | null
+  endDate?: string | null
+  isPublic: boolean
+  totalBudget: number
+  stops: Stop[]
+}
+
+export default function BuildItineraryScreen({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [trip, setTrip] = useState<Trip | null>(null)
   const [loading, setLoading] = useState(true)
   const [cityModalOpen, setCityModalOpen] = useState(false)
   const [actModalOpen, setActModalOpen] = useState<string | null>(null)
-  const [expandedStops, setExpandedStops] = useState<Set<string>>(new Set())
 
   const fetchTrip = useCallback(async () => {
     const res = await fetch(`/api/trips/${params.id}`)
     if (res.ok) {
       const data = await res.json()
       setTrip(data)
-      setExpandedStops(new Set(data.stops.map((s: Stop) => s.id)))
     } else {
       toast.error('Failed to load trip')
     }
     setLoading(false)
   }, [params.id])
 
-  useEffect(() => { fetchTrip() }, [fetchTrip])
+  useEffect(() => {
+    fetchTrip()
+  }, [fetchTrip])
 
   const handleAddCity = async (city: { name: string; country: string; costIndex: number }) => {
     const res = await fetch(`/api/trips/${params.id}/stops`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cityName: city.name, country: city.country, costIndex: city.costIndex }),
+      body: JSON.stringify({
+        cityName: city.name,
+        country: city.country,
+        costIndex: city.costIndex,
+      }),
     })
     if (res.ok) {
-      toast.success(`${city.name} added!`)
+      toast.success(`Section for ${city.name} added!`)
       fetchTrip()
       setCityModalOpen(false)
     } else {
-      toast.error('Failed to add city')
+      toast.error('Failed to add section')
     }
   }
 
   const handleDeleteStop = async (stopId: string) => {
-    if (!confirm('Remove this city and all its activities?')) return
+    if (!confirm('Remove this section and all associated activities?')) return
     const res = await fetch(`/api/stops/${stopId}`, { method: 'DELETE' })
-    if (res.ok) { toast.success('City removed'); fetchTrip() }
-    else toast.error('Failed to remove')
+    if (res.ok) {
+      toast.success('Section removed')
+      fetchTrip()
+    } else {
+      toast.error('Failed to remove section')
+    }
   }
 
   const handleMoveStop = async (stop: Stop, dir: 'up' | 'down') => {
@@ -94,22 +137,21 @@ export default function ItineraryBuilder({ params }: { params: { id: string } })
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
-    if (res.ok) { toast.success('Activity added!'); fetchTrip(); setActModalOpen(null) }
-    else toast.error('Failed to add activity')
+    if (res.ok) {
+      toast.success('Activity added!')
+      fetchTrip()
+      setActModalOpen(null)
+    } else {
+      toast.error('Failed to add activity')
+    }
   }
 
   const handleDeleteActivity = async (actId: string) => {
     const res = await fetch(`/api/activities/${actId}`, { method: 'DELETE' })
-    if (res.ok) { toast.success('Removed'); fetchTrip() }
-  }
-
-  const toggleStop = (id: string) => {
-    setExpandedStops((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+    if (res.ok) {
+      toast.success('Activity removed')
+      fetchTrip()
+    }
   }
 
   if (loading) {
@@ -127,151 +169,216 @@ export default function ItineraryBuilder({ params }: { params: { id: string } })
     .reduce((sum, a) => sum + a.cost, 0)
 
   return (
-    <div className="max-w-4xl mx-auto animate-in">
-      {/* Header */}
-      <div className="mb-8">
-        <Link href="/trips" className="flex items-center gap-2 text-muted hover:text-text text-sm mb-4 transition-colors">
-          <ArrowLeft size={15} /> Back to My Trips
-        </Link>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="font-heading font-bold text-3xl">{trip.name}</h1>
-            {trip.startDate && (
-              <p className="text-muted mt-1">{formatDate(trip.startDate)} – {trip.endDate ? formatDate(trip.endDate) : 'TBD'}</p>
-            )}
-          </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <Link href={`/trips/${params.id}/view`} className="btn-secondary flex items-center gap-2 text-sm py-2">
-              <Eye size={15} /> View
-            </Link>
-            <Link href={`/trips/${params.id}/budget`} className="btn-secondary flex items-center gap-2 text-sm py-2">
-              <BarChart2 size={15} /> Budget
-            </Link>
-            <Link href={`/trips/${params.id}/timeline`} className="btn-secondary flex items-center gap-2 text-sm py-2">
-              <Calendar size={15} /> Timeline
-            </Link>
-          </div>
+    <div className="max-w-4xl mx-auto animate-in space-y-8 pb-16">
+      {/* Header bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
+        <div>
+          <Link
+            href="/trips"
+            className="flex items-center gap-1.5 text-muted hover:text-text text-xs mb-2 transition-colors"
+          >
+            <ArrowLeft size={14} /> Back to Trip Listing
+          </Link>
+          <h1 className="font-heading font-black text-3xl text-text flex items-center gap-2.5">
+            <Compass size={28} className="text-primary" />
+            Build Itinerary Screen
+          </h1>
+          <p className="text-muted text-sm mt-0.5 font-medium">{trip.name}</p>
         </div>
 
-        {/* Summary bar */}
-        <div className="flex items-center gap-6 mt-4 p-4 bg-surface2 rounded-xl border border-border">
-          <div className="flex items-center gap-2 text-sm">
-            <MapPin size={15} className="text-primary" />
-            <span className="text-muted">{trip.stops.length} {trip.stops.length === 1 ? 'city' : 'cities'}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <DollarSign size={15} className="text-secondary" />
-            <span className="text-muted">Total: <strong className="text-secondary">{formatCurrency(totalCost)}</strong></span>
-          </div>
-          {trip.totalBudget > 0 && (
-            <div className={`text-sm ${totalCost > trip.totalBudget ? 'text-danger' : 'text-primary'}`}>
-              Budget: {formatCurrency(trip.totalBudget)}
-              {totalCost > trip.totalBudget && ' ⚠️ Over budget!'}
-            </div>
-          )}
+        {/* View mode actions */}
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/trips/${params.id}/view`}
+            className="btn-secondary flex items-center gap-1.5 text-xs py-2 px-3.5"
+          >
+            <Eye size={14} /> View Plan
+          </Link>
+          <Link
+            href={`/trips/${params.id}/budget`}
+            className="btn-secondary flex items-center gap-1.5 text-xs py-2 px-3.5 text-secondary"
+          >
+            <BarChart2 size={14} /> Budget
+          </Link>
+          <Link
+            href={`/trips/${params.id}/timeline`}
+            className="btn-secondary flex items-center gap-1.5 text-xs py-2 px-3.5"
+          >
+            <Calendar size={14} /> Timeline
+          </Link>
         </div>
       </div>
 
-      {/* Stops */}
-      <div className="space-y-4">
+      {/* Sections List (Matching Screen 5 wireframe) */}
+      <div className="space-y-6">
         {trip.stops.length === 0 ? (
-          <div className="card text-center py-16">
-            <div className="text-5xl mb-4">🗺️</div>
-            <h3 className="font-heading font-bold text-xl mb-2">No cities added yet</h3>
-            <p className="text-muted mb-6">Click "Add City" to start building your itinerary</p>
+          <div className="card text-center py-16 border-dashed border-2">
+            <div className="text-5xl mb-3">📍</div>
+            <h2 className="font-heading font-bold text-xl mb-1">No itinerary sections added yet</h2>
+            <p className="text-muted text-sm mb-6">
+              Click below to add your first travel section (city, hotel, flight, or activity stop).
+            </p>
+            <button
+              onClick={() => setCityModalOpen(true)}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <Plus size={16} /> Add First Section
+            </button>
           </div>
         ) : (
-          trip.stops.map((stop, idx) => (
-            <div key={stop.id} className="card border-border hover:border-primary/30 transition-colors">
-              {/* Stop header */}
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                  {idx + 1}
-                </div>
-                <div
-                  className="flex-1 cursor-pointer"
-                  onClick={() => toggleStop(stop.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{getCountryFlag(stop.country || '')}</span>
-                    <h3 className="font-heading font-semibold text-lg">{stop.cityName}</h3>
-                    <span className="text-muted text-sm">{stop.country}</span>
+          trip.stops.map((stop, idx) => {
+            const sectionBudget = stop.activities.reduce((sum, a) => sum + a.cost, 0)
+            const dateRangeStr =
+              stop.arrivalDate && stop.departureDate
+                ? `${formatDate(stop.arrivalDate)} to ${formatDate(stop.departureDate)}`
+                : trip.startDate && trip.endDate
+                ? `${formatDate(trip.startDate)} to ${formatDate(trip.endDate)}`
+                : 'Dates to be specified'
+
+            return (
+              <div
+                key={stop.id}
+                className="card space-y-4 border border-border/90 hover:border-primary/50 transition-all shadow-xl backdrop-blur-md"
+              >
+                {/* Section Header & Reorder controls */}
+                <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-sm">
+                      {idx + 1}
+                    </span>
+                    <div>
+                      <h2 className="font-heading font-bold text-xl text-text flex items-center gap-2">
+                        Section {idx + 1}: {getCountryFlag(stop.country || '')} {stop.cityName}
+                      </h2>
+                      <span className="text-muted text-xs">{stop.country || 'Destination'}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 mt-1 text-xs text-muted">
-                    {stop.arrivalDate && <span>✈️ {formatDate(stop.arrivalDate)}</span>}
-                    <span>📌 {stop.activities.length} activities</span>
-                    <span className="text-secondary">{formatCurrency(stop.activities.reduce((s, a) => s + a.cost, 0))}</span>
+
+                  {/* Reorder and Delete Actions */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleMoveStop(stop, 'up')}
+                      disabled={idx === 0}
+                      className="p-1.5 hover:bg-surface2 rounded-lg disabled:opacity-20 transition-colors text-muted hover:text-text"
+                      title="Move Up"
+                    >
+                      <ChevronUp size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleMoveStop(stop, 'down')}
+                      disabled={idx === trip.stops.length - 1}
+                      className="p-1.5 hover:bg-surface2 rounded-lg disabled:opacity-20 transition-colors text-muted hover:text-text"
+                      title="Move Down"
+                    >
+                      <ChevronDown size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteStop(stop.id)}
+                      className="p-1.5 hover:bg-danger/10 text-danger rounded-lg transition-colors ml-1"
+                      title="Delete Section"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => handleMoveStop(stop, 'up')} disabled={idx === 0} className="p-1.5 hover:bg-surface2 rounded-lg disabled:opacity-30 transition-colors">
-                    <ChevronUp size={16} />
-                  </button>
-                  <button onClick={() => handleMoveStop(stop, 'down')} disabled={idx === trip.stops.length - 1} className="p-1.5 hover:bg-surface2 rounded-lg disabled:opacity-30 transition-colors">
-                    <ChevronDown size={16} />
-                  </button>
-                  <button onClick={() => handleDeleteStop(stop.id)} className="p-1.5 hover:bg-danger/10 text-danger rounded-lg transition-colors">
-                    <Trash2 size={16} />
+
+                {/* Section Description / Info */}
+                <p className="text-muted text-sm leading-relaxed">
+                  All the necessary information about this section. This can be anything like travel
+                  section, hotel, tours, dining, or any other activity for {stop.cityName}.
+                </p>
+
+                {/* Section Metadata Boxes: Date Range & Budget (Screen 5 wireframe) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="bg-surface2/80 border border-border/80 rounded-xl px-4 py-3 flex items-center gap-2.5">
+                    <Calendar size={16} className="text-primary flex-shrink-0" />
+                    <div>
+                      <span className="text-[11px] text-muted uppercase font-semibold tracking-wider block">
+                        Date Range:
+                      </span>
+                      <span className="text-sm font-medium text-text">{dateRangeStr}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-surface2/80 border border-border/80 rounded-xl px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <DollarSign size={16} className="text-secondary flex-shrink-0" />
+                      <div>
+                        <span className="text-[11px] text-muted uppercase font-semibold tracking-wider block">
+                          Budget of this section:
+                        </span>
+                        <span className="text-sm font-bold text-secondary">
+                          {formatCurrency(sectionBudget)}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="badge bg-secondary/10 text-secondary text-xs">
+                      {stop.activities.length} item{stop.activities.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+
+                {/* List of Section Activities */}
+                {stop.activities.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-border/40">
+                    {stop.activities.map((act) => {
+                      const cat = CATEGORY_CONFIG[act.category] || CATEGORY_CONFIG.other
+                      return (
+                        <div
+                          key={act.id}
+                          className="flex items-center gap-3 p-3 bg-surface2/50 hover:bg-surface2 rounded-xl group border border-transparent hover:border-border transition-all"
+                        >
+                          <span className="text-lg">{cat.emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm truncate">{act.name}</p>
+                            <div className="flex items-center gap-2.5 mt-0.5 text-xs text-muted">
+                              <span className={`badge ${cat.color} text-[11px]`}>{cat.label}</span>
+                              {act.scheduledTime && (
+                                <span className="flex items-center gap-1">
+                                  <Clock size={11} /> {act.scheduledTime}
+                                </span>
+                              )}
+                              <span>Day {act.dayNumber}</span>
+                            </div>
+                          </div>
+                          <span className="text-secondary font-bold text-sm">
+                            {formatCurrency(act.cost)}
+                          </span>
+                          <button
+                            onClick={() => handleDeleteActivity(act.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-danger/10 text-danger rounded-lg transition-all"
+                            title="Remove item"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Add activity to section */}
+                <div className="pt-2 flex justify-start">
+                  <button
+                    onClick={() => setActModalOpen(stop.id)}
+                    className="btn-secondary text-xs py-2 px-3.5 flex items-center gap-1.5 font-medium"
+                  >
+                    <Plus size={13} /> Add Activity / Hotel to this Section
                   </button>
                 </div>
               </div>
-
-              {/* Activities */}
-              {expandedStops.has(stop.id) && (
-                <div className="mt-4 pl-11">
-                  {stop.activities.length === 0 ? (
-                    <p className="text-muted text-sm">No activities yet. Add your first one!</p>
-                  ) : (
-                    <div className="space-y-2 mb-3">
-                      {stop.activities.map((act) => {
-                        const cat = CATEGORY_CONFIG[act.category] || CATEGORY_CONFIG.other
-                        return (
-                          <div key={act.id} className="flex items-center gap-3 p-3 bg-surface2 rounded-xl group hover:bg-surface border border-transparent hover:border-border transition-all">
-                            <span className="text-lg">{cat.emoji}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{act.name}</p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className={`badge text-xs ${cat.color}`}>{cat.label}</span>
-                                {act.scheduledTime && (
-                                  <span className="text-muted text-xs flex items-center gap-1">
-                                    <Clock size={11} /> {act.scheduledTime}
-                                  </span>
-                                )}
-                                {act.dayNumber > 1 && <span className="text-muted text-xs">Day {act.dayNumber}</span>}
-                              </div>
-                            </div>
-                            <span className="text-secondary font-semibold text-sm">{formatCurrency(act.cost)}</span>
-                            <button
-                              onClick={() => handleDeleteActivity(act.id)}
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-danger/10 text-danger rounded-lg transition-all"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                  <button
-                    id={`add-activity-${stop.id}`}
-                    onClick={() => setActModalOpen(stop.id)}
-                    className="btn-secondary flex items-center gap-2 text-sm py-2 mt-2"
-                  >
-                    <Plus size={14} /> Add Activity
-                  </button>
-                </div>
-              )}
-            </div>
-          ))
+            )
+          })
         )}
 
-        {/* Add city button */}
+        {/* "+ Add another Section" Button (Screen 5 wireframe) */}
         <button
-          id="add-city-btn"
+          id="add-another-section-btn"
           onClick={() => setCityModalOpen(true)}
-          className="btn-primary w-full flex items-center justify-center gap-2 py-4"
+          className="w-full py-4 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/5 hover:bg-primary/10 text-primary font-heading font-bold text-base flex items-center justify-center gap-2 hover:border-primary transition-all cursor-pointer shadow-sm hover:shadow-lg hover:shadow-primary/10"
         >
-          <Plus size={18} /> Add City / Stop
+          <Plus size={20} />
+          + Add another Section
         </button>
       </div>
 
