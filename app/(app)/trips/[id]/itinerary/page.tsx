@@ -1,51 +1,50 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
+import { useEffect, useState, useCallback } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   Plus,
   Trash2,
   ChevronUp,
   ChevronDown,
-  MapPin,
-  Clock,
   DollarSign,
+  Calendar,
   Eye,
   BarChart2,
-  Calendar,
-  Loader2,
+  Clock,
+  Compass,
   ArrowLeft,
   Sparkles,
-  Plane,
-  Hotel,
-  Compass,
-  FileText,
+  MapPin,
+  Edit2,
+  Save,
+  X,
+  Loader2,
 } from 'lucide-react'
-import Link from 'next/link'
-import { formatCurrency, formatDate, getCountryFlag, CATEGORY_CONFIG } from '@/lib/helpers'
+import { formatCurrency, formatDate, getCountryFlag } from '@/lib/helpers'
 import CitySearchModal from '@/components/CitySearchModal'
 import ActivityModal from '@/components/ActivityModal'
+import toast from 'react-hot-toast'
 
 interface Activity {
   id: string
   name: string
   category: string
+  description?: string | null
   cost: number
+  durationHours?: number | null
   scheduledTime?: string | null
   dayNumber: number
-  durationHours?: number | null
-  description?: string | null
 }
 
 interface Stop {
   id: string
   cityName: string
   country?: string | null
-  arrivalDate?: string | null
-  departureDate?: string | null
   orderIndex: number
-  costIndex: number
+  arrivalDate?: Date | string | null
+  departureDate?: Date | string | null
   activities: Activity[]
 }
 
@@ -53,30 +52,72 @@ interface Trip {
   id: string
   name: string
   description?: string | null
-  startDate?: string | null
-  endDate?: string | null
-  isPublic: boolean
+  startDate?: Date | string | null
+  endDate?: Date | string | null
   totalBudget: number
+  isPublic: boolean
   stops: Stop[]
 }
 
-export default function BuildItineraryScreen({ params }: { params: { id: string } }) {
+const CATEGORY_CONFIG: Record<string, { label: string; color: string; emoji: string }> = {
+  stay: { label: 'Accommodation', color: 'badge-blue', emoji: '🏨' },
+  sightseeing: { label: 'Sightseeing', color: 'badge-primary', emoji: '🏛️' },
+  food: { label: 'Food & Dining', color: 'badge-orange', emoji: '🍜' },
+  adventure: { label: 'Adventure', color: 'badge-purple', emoji: '🏄' },
+  transport: { label: 'Transport', color: 'badge-green', emoji: '🚆' },
+  other: { label: 'General', color: 'badge-blue', emoji: '✨' },
+}
+
+export default function ItineraryPage() {
+  const params = useParams()
   const router = useRouter()
   const [trip, setTrip] = useState<Trip | null>(null)
   const [loading, setLoading] = useState(true)
   const [cityModalOpen, setCityModalOpen] = useState(false)
   const [actModalOpen, setActModalOpen] = useState<string | null>(null)
 
+  // Edit Modals State
+  const [editingStop, setEditingStop] = useState<Stop | null>(null)
+  const [stopForm, setStopForm] = useState({
+    cityName: '',
+    country: '',
+    arrivalDate: '',
+    departureDate: '',
+  })
+
+  const [isTripEditOpen, setIsTripEditOpen] = useState(false)
+  const [tripForm, setTripForm] = useState({
+    name: '',
+    startDate: '',
+    endDate: '',
+    totalBudget: 0,
+    description: '',
+  })
+  const [savingEdit, setSavingEdit] = useState(false)
+
   const fetchTrip = useCallback(async () => {
-    const res = await fetch(`/api/trips/${params.id}`)
-    if (res.ok) {
+    try {
+      const res = await fetch(`/api/trips/${params.id}`)
+      if (!res.ok) {
+        toast.error('Trip not found')
+        router.push('/trips')
+        return
+      }
       const data = await res.json()
       setTrip(data)
-    } else {
+      setTripForm({
+        name: data.name || '',
+        startDate: data.startDate ? new Date(data.startDate).toISOString().split('T')[0] : '',
+        endDate: data.endDate ? new Date(data.endDate).toISOString().split('T')[0] : '',
+        totalBudget: data.totalBudget || 0,
+        description: data.description || '',
+      })
+    } catch {
       toast.error('Failed to load trip')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
-  }, [params.id])
+  }, [params.id, router])
 
   useEffect(() => {
     fetchTrip()
@@ -130,6 +171,74 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
     fetchTrip()
   }
 
+  const handleOpenEditStop = (stop: Stop) => {
+    setEditingStop(stop)
+    setStopForm({
+      cityName: stop.cityName || '',
+      country: stop.country || '',
+      arrivalDate: stop.arrivalDate ? new Date(stop.arrivalDate).toISOString().split('T')[0] : '',
+      departureDate: stop.departureDate ? new Date(stop.departureDate).toISOString().split('T')[0] : '',
+    })
+  }
+
+  const handleSaveStop = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingStop) return
+    setSavingEdit(true)
+    try {
+      const res = await fetch(`/api/stops/${editingStop.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cityName: stopForm.cityName,
+          country: stopForm.country,
+          arrivalDate: stopForm.arrivalDate || null,
+          departureDate: stopForm.departureDate || null,
+        }),
+      })
+      if (res.ok) {
+        toast.success('Section updated!')
+        setEditingStop(null)
+        fetchTrip()
+      } else {
+        toast.error('Failed to update section')
+      }
+    } catch {
+      toast.error('Error updating section')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const handleSaveTrip = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingEdit(true)
+    try {
+      const res = await fetch(`/api/trips/${params.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: tripForm.name,
+          startDate: tripForm.startDate || null,
+          endDate: tripForm.endDate || null,
+          totalBudget: parseFloat(tripForm.totalBudget.toString()) || 0,
+          description: tripForm.description || null,
+        }),
+      })
+      if (res.ok) {
+        toast.success('Trip details updated!')
+        setIsTripEditOpen(false)
+        fetchTrip()
+      } else {
+        toast.error('Failed to update trip')
+      }
+    } catch {
+      toast.error('Error updating trip')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
   const handleAddActivity = async (stopId: string, data: any) => {
     const res = await fetch(`/api/stops/${stopId}/activities`, {
       method: 'POST',
@@ -150,39 +259,48 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
     if (res.ok) {
       toast.success('Activity removed')
       fetchTrip()
+    } else {
+      toast.error('Failed to remove activity')
     }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <Loader2 size={40} className="text-primary animate-spin" />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted text-sm font-medium">Loading Itinerary...</p>
+        </div>
       </div>
     )
   }
 
-  if (!trip) return <div className="card text-center py-20 text-muted">Trip not found</div>
-
-  const totalCost = trip.stops
-    .flatMap((s) => s.activities)
-    .reduce((sum, a) => sum + a.cost, 0)
+  if (!trip) return null
 
   return (
-    <div className="max-w-4xl mx-auto animate-in space-y-8 pb-16">
-      {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
+    <div className="space-y-8 animate-in pb-20 max-w-5xl mx-auto">
+      {/* 1. Top Header Bar (Matching Screen 5 wireframe) */}
+      <div className="border-b border-border/80 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <Link
             href="/trips"
-            className="flex items-center gap-1.5 text-muted hover:text-text text-xs mb-2 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-primary mb-2 transition-colors"
           >
-            <ArrowLeft size={14} /> Back to Trip Listing
+            <ArrowLeft size={13} /> Back to My Trips
           </Link>
           <h1 className="font-heading font-black text-3xl text-text flex items-center gap-2.5">
             <Compass size={28} className="text-primary" />
             Build Itinerary Screen
           </h1>
-          <p className="text-muted text-sm mt-0.5 font-medium">{trip.name}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-text font-bold text-base">{trip.name}</p>
+            <button
+              onClick={() => setIsTripEditOpen(true)}
+              className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer bg-primary/10 px-2 py-0.5 rounded-md"
+            >
+              <Edit2 size={12} /> Edit Dates & Info
+            </button>
+          </div>
         </div>
 
         {/* View mode actions */}
@@ -195,9 +313,9 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
           </Link>
           <Link
             href={`/trips/${params.id}/budget`}
-            className="btn-secondary flex items-center gap-1.5 text-xs py-2 px-3.5 text-secondary"
+            className="btn-secondary flex items-center gap-1.5 text-xs py-2 px-3.5 text-secondary font-bold"
           >
-            <BarChart2 size={14} /> Budget
+            <BarChart2 size={14} /> Budget ({formatCurrency(trip.totalBudget)})
           </Link>
           <Link
             href={`/trips/${params.id}/timeline`}
@@ -219,7 +337,7 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
             </p>
             <button
               onClick={() => setCityModalOpen(true)}
-              className="btn-primary inline-flex items-center gap-2"
+              className="btn-primary inline-flex items-center gap-2 cursor-pointer"
             >
               <Plus size={16} /> Add First Section
             </button>
@@ -253,12 +371,20 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
                     </div>
                   </div>
 
-                  {/* Reorder and Delete Actions */}
+                  {/* Actions: Edit, Reorder, Delete */}
                   <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleOpenEditStop(stop)}
+                      className="p-1.5 hover:bg-surface2 text-primary rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                      title="Edit Section Name & Dates"
+                    >
+                      <Edit2 size={15} />
+                      <span className="hidden sm:inline">Edit Section</span>
+                    </button>
                     <button
                       onClick={() => handleMoveStop(stop, 'up')}
                       disabled={idx === 0}
-                      className="p-1.5 hover:bg-surface2 rounded-lg disabled:opacity-20 transition-colors text-muted hover:text-text"
+                      className="p-1.5 hover:bg-surface2 rounded-lg disabled:opacity-20 transition-colors text-muted hover:text-text cursor-pointer"
                       title="Move Up"
                     >
                       <ChevronUp size={16} />
@@ -266,14 +392,14 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
                     <button
                       onClick={() => handleMoveStop(stop, 'down')}
                       disabled={idx === trip.stops.length - 1}
-                      className="p-1.5 hover:bg-surface2 rounded-lg disabled:opacity-20 transition-colors text-muted hover:text-text"
+                      className="p-1.5 hover:bg-surface2 rounded-lg disabled:opacity-20 transition-colors text-muted hover:text-text cursor-pointer"
                       title="Move Down"
                     >
                       <ChevronDown size={16} />
                     </button>
                     <button
                       onClick={() => handleDeleteStop(stop.id)}
-                      className="p-1.5 hover:bg-danger/10 text-danger rounded-lg transition-colors ml-1"
+                      className="p-1.5 hover:bg-danger/10 text-danger rounded-lg transition-colors ml-1 cursor-pointer"
                       title="Delete Section"
                     >
                       <Trash2 size={16} />
@@ -281,38 +407,47 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
                   </div>
                 </div>
 
-                {/* Section Description / Info */}
-                <p className="text-muted text-sm leading-relaxed">
+                {/* Section Description */}
+                <p className="text-muted text-xs leading-relaxed">
                   All the necessary information about this section. This can be anything like travel
                   section, hotel, tours, dining, or any other activity for {stop.cityName}.
                 </p>
 
-                {/* Section Metadata Boxes: Date Range & Budget (Screen 5 wireframe) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  <div className="bg-surface2/80 border border-border/80 rounded-xl px-4 py-3 flex items-center gap-2.5">
-                    <Calendar size={16} className="text-primary flex-shrink-0" />
+                {/* Date Range & Budget Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div
+                    onClick={() => handleOpenEditStop(stop)}
+                    className="p-3.5 bg-surface2/60 rounded-xl border border-border/60 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors group"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+                      <Calendar size={18} />
+                    </div>
                     <div>
-                      <span className="text-[11px] text-muted uppercase font-semibold tracking-wider block">
-                        Date Range:
+                      <span className="text-muted text-[11px] block uppercase font-bold tracking-wider">
+                        Date Range (Click to Edit):
                       </span>
-                      <span className="text-sm font-medium text-text">{dateRangeStr}</span>
+                      <p className="font-heading font-semibold text-xs text-text mt-0.5 group-hover:text-primary transition-colors">
+                        {dateRangeStr}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="bg-surface2/80 border border-border/80 rounded-xl px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <DollarSign size={16} className="text-secondary flex-shrink-0" />
+                  <div className="p-3.5 bg-surface2/60 rounded-xl border border-border/60 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
+                        <DollarSign size={18} />
+                      </div>
                       <div>
-                        <span className="text-[11px] text-muted uppercase font-semibold tracking-wider block">
+                        <span className="text-muted text-[11px] block uppercase font-bold tracking-wider">
                           Budget of this section:
                         </span>
-                        <span className="text-sm font-bold text-secondary">
+                        <p className="font-heading font-black text-base text-secondary mt-0.5">
                           {formatCurrency(sectionBudget)}
-                        </span>
+                        </p>
                       </div>
                     </div>
-                    <span className="badge bg-secondary/10 text-secondary text-xs">
-                      {stop.activities.length} item{stop.activities.length !== 1 ? 's' : ''}
+                    <span className="badge bg-surface text-muted text-[11px] font-semibold border border-border">
+                      {stop.activities.length} items
                     </span>
                   </div>
                 </div>
@@ -345,7 +480,7 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
                           </span>
                           <button
                             onClick={() => handleDeleteActivity(act.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-danger/10 text-danger rounded-lg transition-all"
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-danger/10 text-danger rounded-lg transition-all cursor-pointer"
                             title="Remove item"
                           >
                             <Trash2 size={14} />
@@ -360,7 +495,7 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
                 <div className="pt-2 flex justify-start">
                   <button
                     onClick={() => setActModalOpen(stop.id)}
-                    className="btn-secondary text-xs py-2 px-3.5 flex items-center gap-1.5 font-medium"
+                    className="btn-secondary text-xs py-2 px-3.5 flex items-center gap-1.5 font-medium cursor-pointer"
                   >
                     <Plus size={13} /> Add Activity / Hotel to this Section
                   </button>
@@ -381,7 +516,182 @@ export default function BuildItineraryScreen({ params }: { params: { id: string 
         </button>
       </div>
 
-      {/* Modals */}
+      {/* Edit Section / Stop Modal */}
+      {editingStop && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="card max-w-md w-full p-6 space-y-4 border border-border shadow-2xl animate-in">
+            <div className="flex items-center justify-between border-b border-border/70 pb-3">
+              <h3 className="font-heading font-bold text-lg text-text flex items-center gap-2">
+                <Edit2 size={18} className="text-primary" />
+                Edit Section Details
+              </h3>
+              <button
+                onClick={() => setEditingStop(null)}
+                className="p-1 hover:bg-surface2 rounded-lg text-muted hover:text-text cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveStop} className="space-y-3.5">
+              <div>
+                <label className="label-base text-xs font-semibold">City / Location Name:</label>
+                <input
+                  type="text"
+                  required
+                  value={stopForm.cityName}
+                  onChange={(e) => setStopForm((p) => ({ ...p, cityName: e.target.value }))}
+                  className="input-base !py-2 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="label-base text-xs font-semibold">Country:</label>
+                <input
+                  type="text"
+                  value={stopForm.country}
+                  onChange={(e) => setStopForm((p) => ({ ...p, country: e.target.value }))}
+                  className="input-base !py-2 text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label-base text-xs font-semibold">Arrival Date:</label>
+                  <input
+                    type="date"
+                    value={stopForm.arrivalDate}
+                    onChange={(e) => setStopForm((p) => ({ ...p, arrivalDate: e.target.value }))}
+                    className="input-base !py-2 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="label-base text-xs font-semibold">Departure Date:</label>
+                  <input
+                    type="date"
+                    value={stopForm.departureDate}
+                    onChange={(e) => setStopForm((p) => ({ ...p, departureDate: e.target.value }))}
+                    className="input-base !py-2 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingStop(null)}
+                  className="btn-secondary text-xs !py-2 !px-3.5"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="btn-primary text-xs !py-2 !px-4 font-bold flex items-center gap-1.5"
+                >
+                  {savingEdit ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                  Save Section
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Trip Details Modal */}
+      {isTripEditOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="card max-w-md w-full p-6 space-y-4 border border-border shadow-2xl animate-in">
+            <div className="flex items-center justify-between border-b border-border/70 pb-3">
+              <h3 className="font-heading font-bold text-lg text-text flex items-center gap-2">
+                <Sparkles size={18} className="text-primary" />
+                Edit Trip Details & Dates
+              </h3>
+              <button
+                onClick={() => setIsTripEditOpen(false)}
+                className="p-1 hover:bg-surface2 rounded-lg text-muted hover:text-text cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTrip} className="space-y-3.5">
+              <div>
+                <label className="label-base text-xs font-semibold">Trip Title:</label>
+                <input
+                  type="text"
+                  required
+                  value={tripForm.name}
+                  onChange={(e) => setTripForm((p) => ({ ...p, name: e.target.value }))}
+                  className="input-base !py-2 text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label-base text-xs font-semibold">Start Date:</label>
+                  <input
+                    type="date"
+                    value={tripForm.startDate}
+                    onChange={(e) => setTripForm((p) => ({ ...p, startDate: e.target.value }))}
+                    className="input-base !py-2 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="label-base text-xs font-semibold">End Date:</label>
+                  <input
+                    type="date"
+                    value={tripForm.endDate}
+                    onChange={(e) => setTripForm((p) => ({ ...p, endDate: e.target.value }))}
+                    className="input-base !py-2 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label-base text-xs font-semibold">Total Estimated Budget ($ USD):</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={tripForm.totalBudget}
+                  onChange={(e) => setTripForm((p) => ({ ...p, totalBudget: parseFloat(e.target.value) || 0 }))}
+                  className="input-base !py-2 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="label-base text-xs font-semibold">Trip Description:</label>
+                <textarea
+                  rows={2}
+                  value={tripForm.description}
+                  onChange={(e) => setTripForm((p) => ({ ...p, description: e.target.value }))}
+                  className="input-base !py-2 text-xs resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsTripEditOpen(false)}
+                  className="btn-secondary text-xs !py-2 !px-3.5"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="btn-primary text-xs !py-2 !px-4 font-bold flex items-center gap-1.5"
+                >
+                  {savingEdit ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                  Save Trip Info
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Search Modals */}
       {cityModalOpen && (
         <CitySearchModal onClose={() => setCityModalOpen(false)} onAdd={handleAddCity} />
       )}

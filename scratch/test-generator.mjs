@@ -1,18 +1,29 @@
-async function test() {
+async function testCity(destination) {
+  console.log(`\n========================================`)
+  console.log(`Testing Auto-Trip Generation for: "${destination}"`)
   const res = await fetch('http://localhost:3000/api/ai/generate-trip', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      destination: 'Sydney',
+      destination,
       days: 3,
-      style: 'adventure',
+      style: 'cultural',
     }),
   })
   const data = await res.json()
   console.log('Status:', res.status)
-  console.log('Generated Trip Name:', data.tripName)
-  console.log('Suggested Budget:', data.suggestedBudget)
-  console.log('Daily Avg Cost:', data.dailyAvgCost)
-  console.log('Activities Count:', data.activities?.length)
+  console.log('Trip Name:', data.tripName)
+  console.log('Budget:', data.suggestedBudget)
+  console.log('Activities Generated:')
+  data.activities?.forEach((a, i) => {
+    console.log(`  ${i + 1}. [Day ${a.dayNumber}] ${a.name} (${a.category}, $${a.cost}, ${a.scheduledTime})`)
+  })
 }
-test()
+
+async function run() {
+  await testCity('Jaipur')
+  await testCity('Bali')
+  await testCity('Paris')
+  await testCity('Cairo')
+}
+run()
