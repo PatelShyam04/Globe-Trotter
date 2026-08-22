@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
+import AIChatBot from '@/components/AIChatBot'
 import { redirect } from 'next/navigation'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -7,11 +8,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!session) redirect('/login')
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col">
+    <div className="min-h-screen bg-bg flex flex-col relative">
       <Navbar user={session.user} />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
+      <AIChatBot />
     </div>
   )
 }
