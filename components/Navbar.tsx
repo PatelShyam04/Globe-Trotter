@@ -12,7 +12,10 @@ import {
   LogOut,
   Plus,
   Compass,
-  ChevronDown,
+  Calendar as CalendarIcon,
+  Users,
+  Search,
+  ShieldCheck,
 } from 'lucide-react'
 
 interface NavbarProps {
@@ -24,33 +27,36 @@ export default function Navbar({ user }: NavbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const navLinks = [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/trips', label: 'My Trips' },
-    { href: '/profile', label: 'Profile' },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/trips', label: 'My Trips', icon: Map },
+    { href: '/explore', label: 'Explore', icon: Search },
+    { href: '/community', label: 'Community', icon: Users },
+    { href: '/calendar', label: 'Calendar', icon: CalendarIcon },
+    { href: '/admin', label: 'Admin', icon: ShieldCheck },
   ]
 
   return (
     <header className="sticky top-0 z-50 bg-surface/90 backdrop-blur-md border-b border-border/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Left: Brand Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+        <Link href="/dashboard" className="flex items-center gap-2.5 group flex-shrink-0">
           <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
             <Compass size={20} />
           </div>
-          <span className="font-heading font-black text-xl tracking-tight text-text">
+          <span className="font-heading font-black text-xl tracking-tight text-text hidden sm:inline">
             GlobeTrotter
           </span>
         </Link>
 
         {/* Center: Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1 bg-surface2/60 p-1 rounded-xl border border-border/50">
+        <nav className="hidden lg:flex items-center gap-1 bg-surface2/60 p-1 rounded-xl border border-border/50">
           {navLinks.map(({ href, label }) => {
             const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
             return (
               <Link
                 key={href}
                 href={href}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   isActive
                     ? 'bg-primary text-bg font-semibold shadow-sm shadow-primary/20'
                     : 'text-muted hover:text-text hover:bg-surface2'
@@ -67,7 +73,7 @@ export default function Navbar({ user }: NavbarProps) {
           <Link
             href="/trips/create"
             id="header-plan-trip-btn"
-            className="hidden sm:flex btn-primary text-xs py-2 px-3.5 items-center gap-1.5 font-semibold shadow-sm"
+            className="btn-primary text-xs py-2 px-3.5 flex items-center gap-1.5 font-semibold shadow-sm whitespace-nowrap"
           >
             <Plus size={14} />
             Plan a trip
@@ -109,6 +115,30 @@ export default function Navbar({ user }: NavbarProps) {
                   className="flex items-center gap-2.5 px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-colors"
                 >
                   <Map size={15} /> My Trips
+                </Link>
+                <Link
+                  href="/explore"
+                  className="flex items-center gap-2.5 px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-colors lg:hidden"
+                >
+                  <Search size={15} /> Explore & Activities
+                </Link>
+                <Link
+                  href="/community"
+                  className="flex items-center gap-2.5 px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-colors lg:hidden"
+                >
+                  <Users size={15} /> Community
+                </Link>
+                <Link
+                  href="/calendar"
+                  className="flex items-center gap-2.5 px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-colors lg:hidden"
+                >
+                  <CalendarIcon size={15} /> Calendar
+                </Link>
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-2.5 px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-colors"
+                >
+                  <ShieldCheck size={15} /> Admin Panel
                 </Link>
                 <Link
                   href="/profile"
