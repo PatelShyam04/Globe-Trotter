@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Sparkles,
   MessageCircle,
@@ -14,7 +15,10 @@ import {
   Bot,
   User,
   Lightbulb,
+  Zap,
+  MapPin,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface Message {
   id: string
@@ -33,15 +37,17 @@ const QUICK_PROMPTS = [
 ]
 
 export default function AIChatBot() {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [generatingCity, setGeneratingCity] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'assistant',
       content:
-        '👋 Hi! I am **GlobeBot**, your AI Travel Assistant. Ask me to plan itineraries, calculate budgets, recommend hidden spots, or packing advice!',
+        '👋 Hi! I am **GlobeBot**, your AI Travel Assistant. Ask me to plan itineraries, calculate budgets, recommend hidden spots, or auto-generate trips for ANY city worldwide!',
       timestamp: 'Just now',
     },
   ])
@@ -115,13 +121,36 @@ export default function AIChatBot() {
     }
   }
 
+  const handleAutoGenerateTrip = async (destination: string) => {
+    setGeneratingCity(destination)
+    try {
+      const res = await fetch('/api/ai/generate-trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destination, days: 3, autoSave: true }),
+      })
+      const data = await res.json()
+      if (res.ok && data.tripId) {
+        toast.success(`⚡ 3-Day Trip to ${destination} generated and saved!`)
+        setIsOpen(false)
+        router.push(`/trips/${data.tripId}/itinerary`)
+      } else {
+        toast.error(data.error || 'Please sign in to save trips')
+      }
+    } catch {
+      toast.error('Failed to create trip')
+    } finally {
+      setGeneratingCity(null)
+    }
+  }
+
   const handleClearChat = () => {
     setMessages([
       {
         id: 'welcome',
         role: 'assistant',
         content:
-          '👋 Hi! I am **GlobeBot**, your AI Travel Assistant. Ask me to plan itineraries, calculate budgets, recommend hidden spots, or packing advice!',
+          '👋 Hi! I am **GlobeBot**, your AI Travel Assistant. Ask me to plan itineraries, calculate budgets, recommend hidden spots, or auto-generate trips for ANY city worldwide!',
         timestamp: 'Just now',
       },
     ])
@@ -150,7 +179,7 @@ export default function AIChatBot() {
 
       {/* 2. Expandable Chat Window */}
       {isOpen && (
-        <div className="w-[92vw] sm:w-[420px] h-[580px] max-h-[85vh] bg-surface/95 backdrop-blur-xl border border-border/90 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in border-t-2 border-t-primary">
+        <div className="w-[92vw] sm:w-[440px] h-[600px] max-h-[85vh] bg-surface/95 backdrop-blur-xl border border-border/90 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in border-t-2 border-t-primary">
           {/* Header */}
           <div className="p-4 bg-surface2/80 border-b border-border/70 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -162,7 +191,7 @@ export default function AIChatBot() {
                   <h3 className="font-heading font-bold text-sm text-text">GlobeBot AI</h3>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </div>
-                <p className="text-[11px] text-muted">Personalized Travel Intelligence</p>
+                <p className="text-[11px] text-muted">Universal Travel Planner & Budget AI</p>
               </div>
             </div>
 
@@ -190,7 +219,7 @@ export default function AIChatBot() {
               <button
                 key={qp.label}
                 onClick={() => handleSendMessage(qp.prompt)}
-                disabled={loading}
+                disabled={loading || Boolean(generatingCity)}
                 className="px-2.5 py-1 rounded-lg bg-surface border border-border/80 hover:border-primary/50 text-[11px] text-muted hover:text-text whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer disabled:opacity-50"
               >
                 {qp.label}
@@ -217,9 +246,9 @@ export default function AIChatBot() {
                     {isUser ? <User size={13} /> : <Bot size={13} />}
                   </div>
 
-                  <div className={`space-y-1.5 max-w-[82%] ${isUser ? 'items-end' : ''}`}>
+                  <div className={`space-y-1.5 max-w-[85%] ${isUser ? 'items-end' : ''}`}>
                     <div
-                      className={`p-3 rounded-2xl shadow-sm leading-relaxed whitespace-pre-wrap ${
+                      className={`p-3.5 rounded-2xl shadow-sm leading-relaxed whitespace-pre-wrap ${
                         isUser
                           ? 'bg-primary text-bg font-medium rounded-tr-none'
                           : 'bg-surface2/90 text-text border border-border/70 rounded-tl-none'
@@ -227,16 +256,26 @@ export default function AIChatBot() {
                     >
                       {msg.content}
 
-                      {/* Direct CTA button to plan trip with suggested destination */}
+                      {/* 1-Click Direct Auto-Generate Button */}
                       {!isUser && msg.suggestedCity && (
-                        <div className="pt-2.5 mt-2 border-t border-border/50">
-                          <Link
-                            href={`/trips/create?destination=${encodeURIComponent(msg.suggestedCity)}`}
-                            onClick={() => setIsOpen(false)}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+                        <div className="pt-3 mt-3 border-t border-border/50 space-y-2">
+                          <button
+                            onClick={() => handleAutoGenerateTrip(msg.suggestedCity!)}
+                            disabled={Boolean(generatingCity)}
+                            className="btn-primary w-full text-xs py-2 px-3 font-semibold flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 cursor-pointer"
                           >
-                            Plan a Trip to {msg.suggestedCity} Now <ArrowRight size={11} />
-                          </Link>
+                            {generatingCity === msg.suggestedCity ? (
+                              <>
+                                <Loader2 size={13} className="animate-spin" />
+                                Generating & Saving {msg.suggestedCity} Trip...
+                              </>
+                            ) : (
+                              <>
+                                <Zap size={13} />
+                                ⚡ Auto-Generate 3-Day {msg.suggestedCity} Trip
+                              </>
+                            )}
+                          </button>
                         </div>
                       )}
                     </div>
@@ -249,7 +288,7 @@ export default function AIChatBot() {
             {loading && (
               <div className="flex items-center gap-2 text-muted text-xs p-2">
                 <Loader2 size={14} className="animate-spin text-primary" />
-                <span>GlobeBot is thinking...</span>
+                <span>GlobeBot is planning your itinerary...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -268,14 +307,14 @@ export default function AIChatBot() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about Tokyo, budgets, packing..."
+              placeholder="Ask for ANY city (e.g. London, Rome, Cairo, Tokyo)..."
               className="input-base !py-2 !px-3 text-xs flex-1"
-              disabled={loading}
+              disabled={loading || Boolean(generatingCity)}
             />
             <button
               type="submit"
-              disabled={loading || !input.trim()}
-              className="btn-primary !py-2 !px-3 flex items-center justify-center rounded-xl disabled:opacity-40"
+              disabled={loading || !input.trim() || Boolean(generatingCity)}
+              className="btn-primary !py-2 !px-3 flex items-center justify-center rounded-xl disabled:opacity-40 cursor-pointer"
               aria-label="Send message"
             >
               <Send size={14} />
