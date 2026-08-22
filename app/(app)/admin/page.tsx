@@ -26,7 +26,7 @@ export default async function AdminPage() {
     _count: { _all: true },
   })
   const cityUsageMap: Record<string, number> = {}
-  stopCounts.forEach(s => { cityUsageMap[s.cityName] = s._count._all })
+  stopCounts.forEach((s: any) => { cityUsageMap[s.cityName] = s._count._all })
 
   // Fetch activities for popular activities tab
   const activities = await prisma.activity.findMany({
