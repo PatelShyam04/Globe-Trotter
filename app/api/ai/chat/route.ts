@@ -7,133 +7,183 @@ interface Message {
   content: string
 }
 
-const CITY_KNOWLEDGE: Record<string, { desc: string; bestSpots: string[]; budgetPerDay: number; tips: string }> = {
-  tokyo: {
-    desc: 'Vibrant metropolis blending futuristic skyscrapers, historic shrines, and world-class culinary mastery.',
-    bestSpots: ['Tsukiji Outer Market Food Tour ($45)', 'Shibuya Sky & Meiji Shrine ($20)', 'Akihabara Tech District ($15)', 'TeamLab Planets Immersive Art ($35)', 'Shinjuku Gyoen National Garden ($5)'],
-    budgetPerDay: 120,
-    tips: 'Get a 72-hour Tokyo Subway Ticket for unlimited metro rides (~$10). Carry some cash for local ramen ticket machines.',
-  },
-  paris: {
-    desc: 'The global capital of art, gastronomy, and culture with iconic monuments and romantic river vistas.',
-    bestSpots: ['Eiffel Tower Sunset Access ($70)', 'Louvre Museum Masterpieces ($22)', 'Seine River Catamaran Cruise ($45)', 'Montmartre & Sacré-Cœur Walk ($0)', 'Le Marais Pastry Tour ($35)'],
-    budgetPerDay: 150,
-    tips: 'Book Louvre and Eiffel Tower tickets at least 2 weeks in advance to skip 2+ hour queues. Use the Navigo Easy card for the metro.',
-  },
-  rome: {
-    desc: 'The Eternal City with thousands of years of ancient history, Roman architecture, and incredible pasta.',
-    bestSpots: ['Colosseum & Roman Forum Tour ($65)', 'Vatican Museums & Sistine Chapel ($30)', 'Trevi Fountain & Spanish Steps ($0)', 'Trastevere Food & Wine Walk ($50)', 'Pantheon Architecture Visit ($5)'],
-    budgetPerDay: 110,
-    tips: 'Dress respectfully with covered shoulders and knees for church and Vatican visits. Drink free mountain water from city "Nasoni" fountains.',
-  },
-  bali: {
-    desc: 'Tropical paradise known for lush volcanic mountains, iconic rice terraces, sacred temples, and coral reefs.',
-    bestSpots: ['Ubud Sacred Monkey Forest & Waterfalls ($25)', 'Tegallalang Rice Terrace Trek ($10)', 'Uluwatu Sunset Temple & Kecak Dance ($15)', 'Nusa Penida Island Snorkel Tour ($60)', 'Seminyak Beachside Sunset ($0)'],
-    budgetPerDay: 50,
-    tips: 'Rent an automatic scooter (~$5/day) or hire a private driver for full-day excursions (~$35/day).',
-  },
-  dubai: {
-    desc: 'Ultra-modern desert hub celebrated for architectural marvels, luxury shopping, and golden sand dunes.',
-    bestSpots: ['Burj Khalifa 124th Floor Observation ($55)', 'Desert Dune Bashing & Bedouin BBQ ($90)', 'Dubai Marina Yacht Tour ($60)', 'Museum of the Future ($40)', 'Al Fahidi Historic District & Souks ($5)'],
-    budgetPerDay: 180,
-    tips: 'Visit between November and March for pleasant sunny weather. The Dubai Metro is clean, air-conditioned, and connects airport directly to downtown.',
-  },
-  zurich: {
-    desc: 'Picturesque lakeside city surrounded by snow-capped Swiss Alps, offering pristine nature and luxury.',
-    bestSpots: ['Lake Zurich Scenic Boat Tour ($40)', 'Uetliberg Mountain Panoramic Hike ($10)', 'Old Town (Altstadt) Walking Tour ($0)', 'Lindt Home of Chocolate ($17)', 'Day trip to Jungfraujoch ($180)'],
-    budgetPerDay: 190,
-    tips: 'Swiss Travel Pass covers unlimited trains, boats, and museum admissions across the country.',
-  },
+// Global regional heuristics for dynamic cost & activity generation
+const REGION_HEURISTICS: Record<string, { multiplier: number; continent: string; currency: string; sampleHighlights: string[] }> = {
+  asia: { multiplier: 0.7, continent: 'Asia', currency: 'USD', sampleHighlights: ['Historic Temples & Shrines Tour', 'Vibrant Street Food & Night Market Trail', 'Traditional Floating Market / River Cruise', 'Sacred Nature & Botanical Garden Walk'] },
+  europe: { multiplier: 1.3, continent: 'Europe', currency: 'EUR/USD', sampleHighlights: ['Old Town Gothic & Renaissance Architecture Walk', 'National Heritage & Fine Art Museum Guided Tour', 'Scenic River Sunset Catamaran Cruise', 'Celebrated Local Wine & Tapas Tasting'] },
+  americas: { multiplier: 1.4, continent: 'Americas', currency: 'USD', sampleHighlights: ['Iconic Skyline Observation Deck & City Tour', 'Cultural District & Modern Art Immersion', 'National Landmark Guided Exploration', 'Celebrated Chef Gastronomy Dinner'] },
+  oceania: { multiplier: 1.4, continent: 'Oceania', currency: 'AUD/USD', sampleHighlights: ['Harbor Panoramic Cruise & Coastal Cliff Walk', 'Iconic Opera & Theater District Exploration', 'Scenic Mountain & Wildlife Day Excursion', 'Fresh Seafood & Waterfront Dining'] },
+  africa: { multiplier: 0.6, continent: 'Africa', currency: 'USD', sampleHighlights: ['Ancient Citadel & Heritage Souk Walk', 'Desert / Safari Landscape Excursion', 'Traditional Cultural Music & Feast', 'Scenic Coastline & Nature Reserve Trail'] },
+  middleeast: { multiplier: 1.4, continent: 'Middle East', currency: 'USD', sampleHighlights: ['Architectural Wonder & Skyline Observation', 'Desert 4x4 Dune Bashing & Stargazing Camp', 'Historic Old Town Spice & Gold Souks', 'Luxury Marina Sunset Yacht Cruise'] },
 }
 
-function generateSmartTravelAdvice(userMessage: string, userName?: string): { reply: string; suggestedCity?: string } {
-  const msg = userMessage.toLowerCase()
+function detectContinent(name: string): string {
+  const n = name.toLowerCase()
+  if (/tokyo|kyoto|osaka|bali|bangkok|phuket|seoul|beijing|shanghai|delhi|mumbai|singapore|vietnam|hanoi|taipei|manila|ahmedabad|jaipur|goa|india|thailand|japan|korea|indonesia/.test(n)) return 'asia'
+  if (/paris|rome|london|barcelona|madrid|berlin|amsterdam|prague|zurich|vienna|milan|florence|venice|santorini|athens|dublin|edinburgh|lisbon|iceland|reykjavik|budapest|munich|italy|france|spain|germany|uk|greece|switzerland/.test(n)) return 'europe'
+  if (/new\s?york|nyc|los\s?angeles|la|chicago|san\s?francisco|miami|toronto|vancouver|mexico|cancun|rio|buenos\s?aires|patagonia|hawaii|orlando|las\s?vegas|usa|canada|brazil/.test(n)) return 'americas'
+  if (/sydney|melbourne|auckland|queenstown|brisbane|fiji|perth|australia|new\s?zealand/.test(n)) return 'oceania'
+  if (/cairo|egypt|cape\s?town|marrakech|morocco|nairobi|kenya|zanzibar|johannesburg|south\s?africa/.test(n)) return 'africa'
+  if (/dubai|abu\s?dhabi|doha|qatar|riyadh|muscat|istanbul|turkey|uae|saudi/.test(n)) return 'middleeast'
+  return 'europe' // default baseline
+}
 
-  // 1. Universal Global Destination Detection
-  const GLOBAL_CITIES: Record<string, { desc: string; bestSpots: string[]; budgetPerDay: number; tips: string; country: string }> = {
-    tokyo: { desc: 'Vibrant metropolis blending futuristic skyscrapers, historic shrines, and world-class culinary mastery.', bestSpots: ['Tsukiji Outer Market Food Tour ($45)', 'Shibuya Sky & Meiji Shrine ($20)', 'Akihabara Tech District ($15)', 'TeamLab Planets Immersive Art ($35)', 'Shinjuku Gyoen National Garden ($5)'], budgetPerDay: 120, tips: 'Get a 72-hour Tokyo Subway Ticket for unlimited metro rides (~$10).', country: 'Japan' },
-    paris: { desc: 'The global capital of art, gastronomy, and culture with iconic monuments and romantic river vistas.', bestSpots: ['Eiffel Tower Sunset Access ($70)', 'Louvre Museum Masterpieces ($22)', 'Seine River Catamaran Cruise ($45)', 'Montmartre & Sacré-Cœur Walk ($0)', 'Le Marais Pastry Tour ($35)'], budgetPerDay: 150, tips: 'Book Louvre and Eiffel Tower tickets at least 2 weeks in advance.', country: 'France' },
-    rome: { desc: 'The Eternal City with thousands of years of ancient history, Roman architecture, and incredible pasta.', bestSpots: ['Colosseum & Roman Forum Tour ($65)', 'Vatican Museums & Sistine Chapel ($30)', 'Trevi Fountain & Spanish Steps ($0)', 'Trastevere Food & Wine Walk ($50)', 'Pantheon Architecture Visit ($5)'], budgetPerDay: 110, tips: 'Dress respectfully for church and Vatican visits. Drink free water from Nasoni fountains.', country: 'Italy' },
-    bali: { desc: 'Tropical paradise known for lush volcanic mountains, iconic rice terraces, sacred temples, and coral reefs.', bestSpots: ['Ubud Sacred Monkey Forest & Waterfalls ($25)', 'Tegallalang Rice Terrace Trek ($10)', 'Uluwatu Sunset Temple & Kecak Dance ($15)', 'Nusa Penida Island Snorkel Tour ($60)', 'Seminyak Beachside Sunset ($0)'], budgetPerDay: 50, tips: 'Rent an automatic scooter (~$5/day) or hire a private driver.', country: 'Indonesia' },
-    dubai: { desc: 'Ultra-modern desert hub celebrated for architectural marvels, luxury shopping, and golden sand dunes.', bestSpots: ['Burj Khalifa 124th Floor Observation ($55)', 'Desert Dune Bashing & Bedouin BBQ ($90)', 'Dubai Marina Yacht Tour ($60)', 'Museum of the Future ($40)', 'Al Fahidi Historic District & Souks ($5)'], budgetPerDay: 180, tips: 'Visit between November and March for pleasant sunny weather.', country: 'UAE' },
-    zurich: { desc: 'Picturesque lakeside city surrounded by snow-capped Swiss Alps, offering pristine nature and luxury.', bestSpots: ['Lake Zurich Scenic Boat Tour ($40)', 'Uetliberg Mountain Panoramic Hike ($10)', 'Old Town (Altstadt) Walking Tour ($0)', 'Lindt Home of Chocolate ($17)', 'Day trip to Jungfraujoch ($180)'], budgetPerDay: 190, tips: 'Swiss Travel Pass covers unlimited trains, boats, and museum admissions.', country: 'Switzerland' },
-    london: { desc: 'Historic metropolis with royal palaces, West End theaters, iconic double-decker buses, and world-class free museums.', bestSpots: ['Tower of London & Crown Jewels ($40)', 'British Museum & Westminster ($0)', 'London Eye Skyline Flight ($45)', 'Borough Market Culinary Tasting ($30)', 'Soho & Covent Garden Evening Walk ($0)'], budgetPerDay: 160, tips: 'Tap in and out with any contactless card or Oyster card on the Tube.', country: 'United Kingdom' },
-    barcelona: { desc: 'Mediterranean jewel celebrated for Gaudí modernism architecture, sandy city beaches, and tapas culture.', bestSpots: ['Sagrada Família & Park Güell ($45)', 'Gothic Quarter Walking Tour ($0)', 'Barceloneta Beach Sunset & Tapas ($35)', 'Montjuïc Castle Cable Car ($15)', 'Camp Nou Experience ($35)'], budgetPerDay: 105, tips: 'Enjoy late dinners around 9 PM like the locals.', country: 'Spain' },
-    bangkok: { desc: 'Sensory feast of golden Buddhist temples, bustling floating markets, vibrant street food, and lively tuk-tuks.', bestSpots: ['Grand Palace & Wat Pho ($25)', 'Chao Phraya River Ferry & Wat Arun ($5)', 'Chatuchak Weekend Market ($15)', 'Chinatown Night Food Trail ($20)', 'Rooftop Bar Skyline Sunset ($30)'], budgetPerDay: 55, tips: 'Use the BTS Skytrain and MRT to bypass Bangkok road traffic.', country: 'Thailand' },
-    newyork: { desc: 'The city that never sleeps with world-famous skylines, Broadway theater, Central Park, and global cuisine.', bestSpots: ['Empire State / Summit One Vanderbilt ($50)', 'Central Park & Met Museum ($30)', 'Brooklyn Bridge & DUMBO Walk ($0)', 'Broadway Musical Evening ($120)', 'High Line & Chelsea Market ($25)'], budgetPerDay: 190, tips: 'The 7-Day Unlimited MetroCard is the cheapest way to explore NYC.', country: 'USA' },
-    cairo: { desc: 'Ancient gateway along the Nile featuring the Giza Pyramids, historic bazaars, and millennia of civilization.', bestSpots: ['Great Pyramids of Giza & Sphinx ($25)', 'Grand Egyptian Museum ($20)', 'Khan el-Khalili Bazaar ($10)', 'Nile River Felucca Sunset Sail ($20)', 'Historic Islamic Cairo Walk ($5)'], budgetPerDay: 45, tips: 'Hire a licensed Egyptologist guide for the Pyramids.', country: 'Egypt' },
-    sydney: { desc: 'Harbor capital famous for the Opera House, Bondi Beach coastal walks, and sun-soaked outdoor living.', bestSpots: ['Sydney Opera House & Harbor Bridge ($45)', 'Bondi to Coogee Coastal Walk ($0)', 'Manly Beach Ferry Cruise ($10)', 'Blue Mountains Day Trek ($70)', 'Taronga Zoo Harbor Views ($35)'], budgetPerDay: 140, tips: 'Take the public ferry from Circular Quay to Manly for the best harbor views.', country: 'Australia' },
-  }
+function extractLocation(msg: string): string | null {
+  const clean = msg.replace(/[?!.,]/g, '').trim()
+  const patterns = [
+    /(?:plan|itinerary|trip|visit|travel|going|exploring|guide|budget|cost|days? in|for)\s+(?:a\s+)?(?:to\s+)?([a-zA-Z\s]{3,25})/i,
+    /(?:about|what to do in|recommendations for|things to do in|places in)\s+([a-zA-Z\s]{3,25})/i,
+    /([a-zA-Z]{3,20})\s+(?:itinerary|trip|guide|budget|travel)/i,
+  ]
 
-  // Check for any detected city or extract from query
-  for (const [cityKey, data] of Object.entries(GLOBAL_CITIES)) {
-    if (msg.includes(cityKey)) {
-      const cityName = cityKey.charAt(0).toUpperCase() + cityKey.slice(1)
-      const reply = `### 🌍 Custom Travel Itinerary & Budget: ${cityName}, ${data.country}\n\n` +
-        `**Overview:** ${data.desc}\n\n` +
-        `**💰 Recommended Budget:** ~$${data.budgetPerDay}/day (Total for 3 days: **$${data.budgetPerDay * 3}**)\n\n` +
-        `**✨ Top Recommended Daily Highlights:**\n` +
-        data.bestSpots.map((s, i) => `* **Day ${Math.min(3, i + 1)}:** ${s}`).join('\n') +
-        `\n\n**💡 Pro-Traveler Tip:**\n${data.tips}\n\n` +
-        `Ready to add this trip to your dashboard? Click **"⚡ Auto-Generate Trip"** below to instantly create it in your account!`
-
-      return { reply, suggestedCity: cityName }
+  for (const pat of patterns) {
+    const match = clean.match(pat)
+    if (match && match[1]) {
+      let loc = match[1].trim()
+      loc = loc.replace(/^(to|a|in|for|the)\s+/i, '').trim()
+      const stopWords = ['this', 'that', 'what', 'where', 'how', 'when', 'which', 'here', 'there', 'some', 'any', 'my', 'your', 'budget', 'food', 'packing', 'friends', 'multi', 'platform', 'app', 'website', 'use', 'you']
+      if (!stopWords.includes(loc.toLowerCase()) && loc.length >= 3) {
+        return loc.charAt(0).toUpperCase() + loc.slice(1)
+      }
     }
   }
+  return null
+}
 
-  // Generic destination match if user says "trip to X" or "visit X"
-  const match = msg.match(/(?:trip to|visit|travel to|going to|plan|in)\s+([a-zA-Z\s]{3,20})/i)
-  if (match && match[1]) {
-    const customCity = match[1].trim().split(' ')[0]
-    const formattedCity = customCity.charAt(0).toUpperCase() + customCity.slice(1)
-    if (!['the', 'a', 'my', 'budget', 'some', 'any'].includes(customCity.toLowerCase())) {
-      const reply = `### 🌍 Custom Travel Itinerary: ${formattedCity}\n\n` +
-        `Here is an intelligent travel plan and budget estimate for **${formattedCity}**:\n\n` +
-        `* **💰 Estimated Budget:** ~$90 – $140 / day (Accommodations + Meals + Transport)\n` +
-        `* **🏛️ Day 1:** Arrival, historic city center orientation, and local culinary tasting.\n` +
-        `* **🎨 Day 2:** Iconic cultural landmarks, national museum tour, and sunset viewpoint.\n` +
-        `* **🌲 Day 3:** Nature excursion, scenic harbor/river cruise, and celebrated dining experience.\n\n` +
-        `Click **"⚡ Auto-Generate Trip"** below to automatically create and save this itinerary directly to your GlobeTrotter account!`
+function generateDynamicResponse(userMessage: string, userName?: string): { reply: string; suggestedCity?: string } {
+  const msg = userMessage.toLowerCase().trim()
 
-      return { reply, suggestedCity: formattedCity }
-    }
-  }
-
-  // 2. Budget or Multi-City Planning
-  if (msg.includes('budget') || msg.includes('cost') || msg.includes('how much') || msg.includes('cheap')) {
-    const reply = `### 💰 Intelligent Budget Estimation Guide\n\n` +
-      `Here is a realistic breakdown for budget planning across popular travel tiers:\n\n` +
-      `* **Backpacker / Budget Tier:** $40 – $70 / day (Hostels, street food, public transit, free walking tours)\n` +
-      `* **Comfort / Mid-Range Tier:** $100 – $180 / day (Boutique 3-4★ hotels, curated tours, sit-down dining)\n` +
-      `* **Luxury Tier:** $250+ / day (5★ luxury resorts, private chauffeurs, Michelin culinary experiences)\n\n` +
-      `**💡 Top Ways to Save on GlobeTrotter:**\n` +
-      `1. Use our **Budget Breakdown** chart to set daily spending limits.\n` +
-      `2. Group activities by neighborhood to minimize transit costs.\n` +
-      `3. Look at the **Cost Index** on our Explore page to pick high-value destinations (e.g. Bali, Prague, Tokyo).`
+  // 1. "What is use of this?" / "What can you do?" / Platform Overview
+  if (
+    msg.includes('use of this') ||
+    msg.includes('what is this') ||
+    msg.includes('what can you do') ||
+    msg.includes('how does this work') ||
+    msg.includes('how to use') ||
+    msg.includes('features') ||
+    msg.includes('help')
+  ) {
+    const reply = `### 🌟 Welcome to GlobeTrotter & GlobeBot AI! 🌍\n\n` +
+      `**GlobeTrotter** is an all-in-one travel planning platform designed to make multi-city travel seamless. Here is everything you can do:\n\n` +
+      `1. **⚡ 1-Click AI Auto-Trip Generator:**\n` +
+      `   * Ask me for ANY city or country (e.g. *"Plan 4 days in London"* or *"Trip to Tokyo"*), and I will generate a complete day-by-day itinerary and **save it directly to your account**!\n\n` +
+      `2. **💰 Intelligent Budget Estimator:**\n` +
+      `   * Ask me for budget advice for any destination. Our platform automatically charts your expenses and alerts you if you go over budget.\n\n` +
+      `3. **🗺️ Modular Itinerary Builder:**\n` +
+      `   * Build multi-city journeys section by section (e.g. Paris ➔ Zurich ➔ Rome) with custom activities and times.\n\n` +
+      `4. **👥 Community Hub & 1-Click Trip Cloning:**\n` +
+      `   * Explore shared community trips and copy full multi-city itineraries into your account in 1 click!\n\n` +
+      `5. **📅 Visual Timeline & Spanning Calendar:**\n` +
+      `   * See your trip schedules across a full monthly calendar grid or sequential day-wise timeline.\n\n` +
+      `💬 **Try asking me:**\n` +
+      `* *"Plan a 3-day itinerary for Tokyo with estimated costs"*\n` +
+      `* *"How should I budget $1,200 for a trip to Italy?"*\n` +
+      `* *"Compare Paris vs Rome for culture and food"*`
 
     return { reply }
   }
 
-  // 3. Packing or Transit Advice
-  if (msg.includes('pack') || msg.includes('transit') || msg.includes('flight') || msg.includes('tips')) {
-    const reply = `### 🎒 Essential Traveler Checklist\n\n` +
-      `Here are the golden rules for stress-free multi-city travel:\n\n` +
-      `* **Documents:** Universal power adapter, digital copies of passport/visas saved offline, travel insurance card.\n` +
-      `* **Money:** Zero foreign-transaction fee credit card + local currency backup for markets.\n` +
-      `* **Packing Rule:** Pack for 5 days max and use local laundromats — you can travel light anywhere with a carry-on!\n` +
-      `* **Connectivity:** Download regional e-SIMs (Airalo or Holafly) before landing for instant 5G data.`
+  // 2. Comparison Queries (e.g. "Paris vs Rome", "Tokyo or Kyoto")
+  if (msg.includes(' vs ') || (msg.includes(' or ') && (msg.includes('better') || msg.includes('compare') || msg.includes('which')))) {
+    const parts = msg.split(/ vs | or /i)
+    if (parts.length >= 2) {
+      const cityA = parts[0].replace(/.*(compare|between|which is better:?)/i, '').trim()
+      const cityB = parts[1].replace(/(\?|for food|for culture|for budget).*/i, '').trim()
+      const capA = cityA.charAt(0).toUpperCase() + cityA.slice(1)
+      const capB = cityB.charAt(0).toUpperCase() + cityB.slice(1)
+
+      const reply = `### ⚖️ Travel Comparison: ${capA} vs ${capB}\n\n` +
+        `Both **${capA}** and **${capB}** are phenomenal destinations with distinct advantages:\n\n` +
+        `| Feature | **${capA}** | **${capB}** |\n` +
+        `| :--- | :--- | :--- |\n` +
+        `| **Primary Vibe** | Iconic culture, scenic highlights & vibrant cuisine | Historic architecture, atmospheric streets & relaxation |\n` +
+        `| **Estimated Budget** | ~$110 – $160 / day | ~$90 – $140 / day |\n` +
+        `| **Ideal Duration** | 3 to 5 Days | 3 to 4 Days |\n` +
+        `| **Best For** | City exploration, food tours & landmarks | Immersive history, walking tours & nightlife |\n\n` +
+        `**💡 GlobeBot Recommendation:**\n` +
+        `If you have 6–7 days, you can add **both ${capA} and ${capB}** as consecutive stops in our **Itinerary Builder**!\n\n` +
+        `Which destination would you like to auto-generate first?`
+
+      return { reply, suggestedCity: capA }
+    }
+  }
+
+  // 3. Dynamic Location Search / Itinerary Generation for ANY city or country
+  const detectedLocation = extractLocation(userMessage)
+
+  if (detectedLocation) {
+    const regionKey = detectContinent(detectedLocation)
+    const regionData = REGION_HEURISTICS[regionKey]
+    const baseDailyCost = Math.round(90 * regionData.multiplier)
+
+    const reply = `### 🌍 Custom Travel Itinerary & Budget: ${detectedLocation}\n\n` +
+      `Here is an intelligent travel plan and budget estimate for **${detectedLocation}** (${regionData.continent}):\n\n` +
+      `**💰 Estimated Daily Budget:** ~$${baseDailyCost} – $${Math.round(baseDailyCost * 1.5)} / day\n` +
+      `* **3-Day Estimated Total:** **$${baseDailyCost * 3}** (Accommodations + Dining + Transport + Activities)\n\n` +
+      `**📅 Curated Day-by-Day Activity Highlights:**\n` +
+      `* **🏛️ Day 1: City Orientation & Culinary Walk**\n` +
+      `  * Morning: Historic center walking tour & architectural landmarks ($0)\n` +
+      `  * Afternoon: Authentic local food tasting & traditional market ($35)\n` +
+      `  * Evening: Sunset panoramic viewpoint / riverfront experience ($20)\n\n` +
+      `* **🎨 Day 2: Cultural Immersion & Iconic Landmarks**\n` +
+      `  * Morning: ${regionData.sampleHighlights[0]} ($45)\n` +
+      `  * Afternoon: ${regionData.sampleHighlights[1]} ($25)\n` +
+      `  * Evening: ${regionData.sampleHighlights[2]} ($50)\n\n` +
+      `* **🌲 Day 3: Scenic Excursion & Farewell Experience**\n` +
+      `  * Full Day: ${regionData.sampleHighlights[3]} ($65)\n` +
+      `  * Night: Celebrated local gastronomy dinner & evening nightlife ($60)\n\n` +
+      `**💡 Pro-Traveler Tip for ${detectedLocation}:**\n` +
+      `Book popular attraction tickets online to skip queues, and use local transit passes for cost savings.\n\n` +
+      `Click **"⚡ Auto-Generate 3-Day ${detectedLocation} Trip"** below to automatically create this plan in your account!`
+
+    return { reply, suggestedCity: detectedLocation }
+  }
+
+  // 4. Budget & Finance Inquiries
+  if (msg.includes('budget') || msg.includes('cost') || msg.includes('how much') || msg.includes('cheap') || msg.includes('money') || msg.includes('expensive')) {
+    const reply = `### 💰 Global Travel Budget Estimator & Tiers\n\n` +
+      `Here is a realistic breakdown for budget planning across popular travel tiers worldwide:\n\n` +
+      `* **🎒 Backpacker / Budget Tier:** $40 – $75 / day\n` +
+      `  * Stay: Hostels & budget guesthouses\n` +
+      `  * Meals: Local street food & casual eateries\n` +
+      `  * Transport: Metro, buses, and walking tours\n\n` +
+      `* **🧳 Comfort / Mid-Range Tier:** $100 – $190 / day\n` +
+      `  * Stay: Boutique 3★ & 4★ hotels or cozy Airbnbs\n` +
+      `  * Meals: Sit-down dining with regional wine & specialties\n` +
+      `  * Transport: Taxis, express trains, and guided tours\n\n` +
+      `* **💎 Luxury Tier:** $280+ / day\n` +
+      `  * Stay: 5★ luxury resorts & heritage suites\n` +
+      `  * Meals: Michelin-starred gastronomy & private chefs\n` +
+      `  * Transport: Private airport chauffeurs & chartered experiences\n\n` +
+      `**💡 GlobeTrotter Feature Highlight:**\n` +
+      `When you build an itinerary on GlobeTrotter, our **Budget Breakdown Chart** tracks your costs per category and alerts you if any single day exceeds your budget!`
 
     return { reply }
   }
 
-  // 4. Default Personalized Travel Assistant Reply
-  const reply = `Hello ${userName || 'fellow traveler'}! 👋 I'm **GlobeBot**, your AI Travel Planner.\n\n` +
-    `I can help you build the perfect trip. Try asking me:\n\n` +
-    `* 🗼 *"Plan a 3-day itinerary for Tokyo on a budget"*\n` +
-    `* 🥐 *"What are the best food experiences in Paris?"*\n` +
-    `* 🌴 *"Suggest an adventure trip to Bali with costs"*\n` +
+  // 5. Packing & Transit Inquiries
+  if (msg.includes('pack') || msg.includes('transit') || msg.includes('flight') || msg.includes('tips') || msg.includes('checklist')) {
+    const reply = `### 🎒 Essential Multi-City Travel Checklist\n\n` +
+      `Follow these expert rules to keep your journeys organized and stress-free:\n\n` +
+      `* **📱 Connectivity:** Install a regional eSIM (e.g. Airalo/Holafly) before departure so you have instant mobile data when you land.\n` +
+      `* **💳 Smart Payments:** Use a travel card with 0% foreign transaction fees, plus keep $50 equivalent in local cash for small market vendors.\n` +
+      `* **🧳 Carry-On Rule:** Pack maximum 5 days of lightweight, quick-dry clothing and do laundry on longer trips.\n` +
+      `* **📄 Offline Backup:** Save digital PDF copies of your flight tickets, hotel reservations, and passport in your phone notes.\n\n` +
+      `Tell me where you are traveling, and I can give you customized seasonal advice!`
+
+    return { reply }
+  }
+
+  // 6. Natural Language Default
+  const reply = `Hello ${userName || 'fellow traveler'}! 👋 I am **GlobeBot**, your AI Travel Planner.\n\n` +
+    `I can build customized itineraries, calculate budgets, and plan trips for **ANY city or country in the world**.\n\n` +
+    `💬 **Try asking me:**\n` +
+    `* 🗼 *"Plan a 3-day trip to Tokyo with budget and activities"*\n` +
+    `* 🏛️ *"What are the best attractions in Rome or Athens?"*\n` +
+    `* 🌴 *"Suggest an adventure itinerary for Bali or Costa Rica"*\n` +
     `* 💰 *"How should I budget $1,500 for a week in Europe?"*\n` +
-    `* 🎒 *"Packing checklist for backpacking"*`
+    `* ⚖️ *"Compare Paris vs Rome for food and culture"*\n\n` +
+    `Where would you like to travel next?`
 
   return { reply }
 }
@@ -151,8 +201,6 @@ export async function POST(req: NextRequest) {
 
     // Check if an external LLM key is configured (Gemini or OpenAI)
     const geminiKey = process.env.GEMINI_API_KEY
-    const openaiKey = process.env.OPENAI_API_KEY
-
     if (geminiKey) {
       try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
@@ -162,7 +210,7 @@ export async function POST(req: NextRequest) {
             contents: [
               {
                 role: 'user',
-                parts: [{ text: `You are GlobeBot, an enthusiastic and expert travel planner. Format your answer with markdown headings, bullet points, and realistic estimated costs in USD. User prompt: ${lastMessage}` }],
+                parts: [{ text: `You are GlobeBot, the expert travel planning AI inside the GlobeTrotter platform. Answer this user prompt clearly with markdown formatting, estimated daily budgets in USD, and structured activity recommendations. User: ${lastMessage}` }],
               },
             ],
           }),
@@ -172,7 +220,8 @@ export async function POST(req: NextRequest) {
           const data = await res.json()
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text
           if (text) {
-            return NextResponse.json({ reply: text })
+            const loc = extractLocation(lastMessage)
+            return NextResponse.json({ reply: text, suggestedCity: loc || undefined })
           }
         }
       } catch (err) {
@@ -180,8 +229,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // High-quality local travel intelligence engine
-    const { reply, suggestedCity } = generateSmartTravelAdvice(lastMessage, session?.user?.name || undefined)
+    // High-quality dynamic intelligence engine
+    const { reply, suggestedCity } = generateDynamicResponse(lastMessage, session?.user?.name || undefined)
 
     return NextResponse.json({ reply, suggestedCity })
   } catch (error) {
