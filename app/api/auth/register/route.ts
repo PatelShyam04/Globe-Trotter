@@ -4,10 +4,23 @@ import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json()
+    const {
+      firstName,
+      lastName,
+      name,
+      email,
+      password,
+      phone,
+      city,
+      country,
+      bio,
+      image,
+    } = await request.json()
 
-    if (!email || !password || !name) {
-      return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
+    const fullName = name || [firstName, lastName].filter(Boolean).join(' ') || 'Traveler'
+
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
 
     if (password.length < 6) {
@@ -22,7 +35,18 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12)
 
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: {
+        name: fullName,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        email,
+        password: hashedPassword,
+        phone: phone || null,
+        city: city || null,
+        country: country || null,
+        bio: bio || null,
+        image: image || null,
+      },
       select: { id: true, name: true, email: true },
     })
 
