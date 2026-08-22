@@ -65,15 +65,15 @@ export default function CitySearchModal({ onClose, onAdd }: Props) {
 
         {/* Search */}
         <div className="p-6 border-b border-border space-y-4">
-          <div className="relative">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+          <div className="relative group">
+            <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-primary transition-colors" />
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
               placeholder="Search city or country..."
-              className="input-base pl-11"
+              className="input-base input-icon-left"
               id="city-search-input"
             />
           </div>
