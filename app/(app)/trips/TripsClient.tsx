@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Search,
@@ -54,11 +54,20 @@ interface Props {
 export default function TripsClient({ trips: initialTrips }: Props) {
   const router = useRouter()
   const [trips, setTrips] = useState(initialTrips)
+  const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'ongoing' | 'upcoming' | 'completed'>('all')
   const [sortBy, setSortBy] = useState<'newest' | 'name' | 'budget'>('newest')
 
   const now = new Date()
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [searchInput])
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
@@ -203,7 +212,7 @@ export default function TripsClient({ trips: initialTrips }: Props) {
         <div>
           <h1 className="font-heading font-black text-3xl text-text">User Trip Listing</h1>
           <p className="text-muted text-sm mt-0.5">
-            Manage all your ongoing, upcoming, and completed travel plans
+            Manage all your ongoing, upcoming, and completed travel plans ({trips.length} total)
           </p>
         </div>
         <Link href="/trips/create" className="btn-primary flex items-center gap-2 text-sm py-2.5 px-5">
@@ -220,8 +229,8 @@ export default function TripsClient({ trips: initialTrips }: Props) {
           />
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search bar ...... (filter by trip name, destination)"
             className="input-base input-icon-left !py-2.5 text-sm"
           />
@@ -264,7 +273,7 @@ export default function TripsClient({ trips: initialTrips }: Props) {
         <section className="space-y-3">
           <h2 className="font-heading font-bold text-xl text-text flex items-center gap-2 border-b border-border/60 pb-2">
             <span className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-            Ongoing
+            Ongoing ({ongoing.length})
           </h2>
 
           {ongoing.length === 0 ? (
@@ -289,7 +298,7 @@ export default function TripsClient({ trips: initialTrips }: Props) {
         <section className="space-y-3">
           <h2 className="font-heading font-bold text-xl text-text flex items-center gap-2 border-b border-border/60 pb-2">
             <Plane size={18} className="text-secondary" />
-            Up-coming
+            Up-coming ({upcoming.length})
           </h2>
 
           {upcoming.length === 0 ? (
@@ -314,7 +323,7 @@ export default function TripsClient({ trips: initialTrips }: Props) {
         <section className="space-y-3">
           <h2 className="font-heading font-bold text-xl text-text flex items-center gap-2 border-b border-border/60 pb-2">
             <Clock size={18} className="text-blue-400" />
-            Completed
+            Completed ({completed.length})
           </h2>
 
           {completed.length === 0 ? (

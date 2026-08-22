@@ -25,6 +25,9 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   trips       Trip[]
+
+  @@index([email])
+  @@index([role])
 }
 
 model Trip {
@@ -41,6 +44,10 @@ model Trip {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   stops       Stop[]
+
+  @@index([userId])
+  @@index([isPublic])
+  @@index([createdAt])
 }
 
 model Stop {
@@ -54,6 +61,9 @@ model Stop {
   orderIndex    Int        @default(0)
   costIndex     Float      @default(1.0)
   activities    Activity[]
+
+  @@index([tripId])
+  @@index([orderIndex])
 }
 
 model Activity {
@@ -68,6 +78,10 @@ model Activity {
   scheduledTime String?
   dayNumber     Int      @default(1)
   createdAt     DateTime @default(now())
+
+  @@index([stopId])
+  @@index([category])
+  @@index([dayNumber])
 }
 
 model City {
@@ -79,4 +93,8 @@ model City {
   popularity  Int     @default(0)
   imageUrl    String?
   description String?
+
+  @@index([popularity])
+  @@index([region])
+  @@index([country])
 }

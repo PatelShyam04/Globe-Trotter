@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Search,
@@ -140,10 +140,19 @@ interface Props {
 }
 
 export default function ExploreClient({ cities, userTrips }: Props) {
+  const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [sortBy, setSortBy] = useState<'popularity' | 'cost_asc' | 'cost_desc'>('popularity')
   const [groupBy, setGroupBy] = useState<'all' | 'adventure' | 'sightseeing' | 'food'>('all')
+
+  // Debounce search query to prevent unnecessary re-filtering on rapid keystrokes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [searchInput])
 
   const filteredItems = useMemo(() => {
     let list = [...SAMPLE_ACTIVITIES]
@@ -201,8 +210,8 @@ export default function ExploreClient({ cities, userTrips }: Props) {
           />
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Paragliding, Sushi masterclass, Museums, Paris..."
             className="input-base input-icon-left !py-2.5 text-sm"
           />
@@ -242,7 +251,7 @@ export default function ExploreClient({ cities, userTrips }: Props) {
 
       {/* Results Header (Screen 8 wireframe) */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between border-b border-border/70 pb-3">
+        <div className="flex items-center justify-between border-b border-border/70 pb-3 flex-wrap gap-2">
           <h2 className="font-heading font-bold text-2xl text-text flex items-center gap-2">
             <Sparkles size={20} className="text-secondary" />
             Results ({filteredItems.length})
@@ -254,7 +263,7 @@ export default function ExploreClient({ cities, userTrips }: Props) {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
                   selectedCategory === cat
-                    ? 'bg-primary text-bg'
+                    ? 'bg-primary text-bg shadow-sm'
                     : 'bg-surface2 text-muted hover:text-text'
                 }`}
               >
@@ -267,7 +276,7 @@ export default function ExploreClient({ cities, userTrips }: Props) {
         {/* Results List: Option and its details (Screen 8 wireframe) */}
         {filteredItems.length === 0 ? (
           <div className="card !p-12 text-center text-muted text-sm border-dashed border-2">
-            No activities or places found matching &quot;{searchQuery}&quot;. Try clearing filters.
+            No activities or places found matching &quot;{searchInput}&quot;. Try clearing filters.
           </div>
         ) : (
           <div className="space-y-3.5">
@@ -276,12 +285,15 @@ export default function ExploreClient({ cities, userTrips }: Props) {
                 key={item.id}
                 className="card !p-4 border border-border hover:border-primary/50 transition-all shadow-md flex flex-col sm:flex-row items-start sm:items-center gap-4 group"
               >
-                {/* Thumbnail */}
+                {/* Thumbnail with resilient fallback */}
                 <div className="w-full sm:w-36 h-28 rounded-xl overflow-hidden bg-surface2 flex-shrink-0 relative">
                   <img
                     src={item.image}
                     alt={item.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80'
+                    }}
                   />
                   <span className="absolute top-2 left-2 badge bg-surface/90 text-primary text-[10px] font-bold">
                     {item.category}
