@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
+import Providers from '@/components/Providers'
 
 export const metadata: Metadata = {
   title: 'GlobeTrotter – Personalized Travel Planning',
@@ -24,24 +25,26 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-bg text-text font-body antialiased">
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: '#1F2937',
-              color: '#F9FAFB',
-              border: '1px solid #374151',
-              borderRadius: '12px',
-            },
-            success: {
-              iconTheme: { primary: '#00D4AA', secondary: '#0A0F1E' },
-            },
-            error: {
-              iconTheme: { primary: '#EF4444', secondary: '#0A0F1E' },
-            },
-          }}
-        />
-        {children}
+        <Providers>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: '#1F2937',
+                color: '#F9FAFB',
+                border: '1px solid #374151',
+                borderRadius: '12px',
+              },
+              success: {
+                iconTheme: { primary: '#00D4AA', secondary: '#0A0F1E' },
+              },
+              error: {
+                iconTheme: { primary: '#EF4444', secondary: '#0A0F1E' },
+              },
+            }}
+          />
+          {children}
+        </Providers>
       </body>
     </html>
   )

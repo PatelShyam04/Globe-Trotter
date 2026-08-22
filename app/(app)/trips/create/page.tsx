@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { Globe, Calendar, FileText, Image, Lock, Loader2, ArrowLeft, DollarSign } from 'lucide-react'
+import { Globe, Calendar, FileText, Image as ImageIcon, Lock, Loader2, ArrowLeft, DollarSign, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 
 export default function CreateTripPage() {
@@ -62,14 +62,14 @@ export default function CreateTripPage() {
           Back to My Trips
         </Link>
         <h1 className="font-heading font-bold text-3xl">Create New Trip</h1>
-        <p className="text-muted mt-1">Fill in the details to start planning your adventure</p>
+        <p className="text-muted mt-1">Fill in the details to start planning your next journey</p>
       </div>
 
       <form onSubmit={handleSubmit} className="card space-y-6">
         {/* Trip Name */}
         <div>
-          <label className="text-sm font-medium text-muted block mb-2">
-            <Globe size={14} className="inline mr-1" /> Trip Name *
+          <label htmlFor="trip-name" className="label-base">
+            <Globe size={14} className="inline mr-1 text-primary" /> Trip Name *
           </label>
           <input
             id="trip-name"
@@ -79,14 +79,15 @@ export default function CreateTripPage() {
             onChange={handleChange}
             placeholder="e.g. Europe Summer 2026"
             className="input-base"
+            autoFocus
           />
         </div>
 
         {/* Dates */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-muted block mb-2">
-              <Calendar size={14} className="inline mr-1" /> Start Date
+            <label htmlFor="start-date" className="label-base">
+              <Calendar size={14} className="inline mr-1 text-primary" /> Start Date
             </label>
             <input
               id="start-date"
@@ -98,8 +99,8 @@ export default function CreateTripPage() {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-muted block mb-2">
-              <Calendar size={14} className="inline mr-1" /> End Date
+            <label htmlFor="end-date" className="label-base">
+              <Calendar size={14} className="inline mr-1 text-primary" /> End Date
             </label>
             <input
               id="end-date"
@@ -114,15 +115,15 @@ export default function CreateTripPage() {
 
         {/* Description */}
         <div>
-          <label className="text-sm font-medium text-muted block mb-2">
-            <FileText size={14} className="inline mr-1" /> Description
+          <label htmlFor="trip-description" className="label-base">
+            <FileText size={14} className="inline mr-1 text-primary" /> Description
           </label>
           <textarea
             id="trip-description"
             name="description"
             value={form.description}
             onChange={handleChange}
-            placeholder="What's this trip about?"
+            placeholder="What's the vibe and purpose of this trip?"
             rows={3}
             className="input-base resize-none"
           />
@@ -130,8 +131,8 @@ export default function CreateTripPage() {
 
         {/* Budget */}
         <div>
-          <label className="text-sm font-medium text-muted block mb-2">
-            <DollarSign size={14} className="inline mr-1" /> Total Budget (USD)
+          <label htmlFor="budget" className="label-base">
+            <DollarSign size={14} className="inline mr-1 text-secondary" /> Estimated Budget (USD)
           </label>
           <input
             id="budget"
@@ -147,8 +148,8 @@ export default function CreateTripPage() {
 
         {/* Cover photo */}
         <div>
-          <label className="text-sm font-medium text-muted block mb-2">
-            <Image size={14} className="inline mr-1" /> Cover Photo URL (optional)
+          <label htmlFor="cover-photo" className="label-base">
+            <ImageIcon size={14} className="inline mr-1 text-primary" /> Cover Photo URL (optional)
           </label>
           <input
             id="cover-photo"
@@ -156,7 +157,7 @@ export default function CreateTripPage() {
             type="url"
             value={form.coverPhoto}
             onChange={handleChange}
-            placeholder="https://images.unsplash.com/..."
+            placeholder="https://images.unsplash.com/photo-..."
             className="input-base"
           />
         </div>
@@ -169,30 +170,37 @@ export default function CreateTripPage() {
             type="checkbox"
             checked={form.isPublic}
             onChange={handleChange}
-            className="w-4 h-4 accent-primary"
+            className="w-5 h-5 rounded accent-primary cursor-pointer"
           />
           <div>
-            <label htmlFor="is-public" className="font-medium cursor-pointer flex items-center gap-2">
-              <Lock size={15} className="text-muted" />
-              Make trip public
+            <label htmlFor="is-public" className="font-semibold cursor-pointer flex items-center gap-1.5 text-sm text-text">
+              <Lock size={14} className="text-primary" />
+              Make trip publicly shareable
             </label>
             <p className="text-muted text-xs mt-0.5">
-              Public trips are shareable via link and visible to anyone
+              Anyone with the link will be able to view and get inspired by your itinerary
             </p>
           </div>
         </div>
 
         <div className="flex gap-4 pt-2">
-          <Link href="/trips" className="btn-secondary flex-1 text-center">
+          <Link href="/trips" className="btn-secondary flex-1 text-center py-3">
             Cancel
           </Link>
           <button
             id="save-trip-btn"
             type="submit"
             disabled={loading}
-            className="btn-primary flex-1 flex items-center justify-center gap-2"
+            className="btn-primary flex-1 flex items-center justify-center gap-2 py-3"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : 'Create Trip & Add Cities →'}
+            {loading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <>
+                <Sparkles size={16} />
+                Create Trip & Add Cities
+              </>
+            )}
           </button>
         </div>
       </form>

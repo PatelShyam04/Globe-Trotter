@@ -1,8 +1,8 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useState } from 'react'
-import { User, Mail, Image, Save, Trash2, Loader2, Shield } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { User, Mail, Image as ImageIcon, Save, Trash2, Loader2, Shield } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
@@ -18,6 +18,16 @@ export default function ProfilePage() {
     currentPassword: '',
     newPassword: '',
   })
+
+  useEffect(() => {
+    if (session?.user) {
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || session.user?.name || '',
+        image: prev.image || session.user?.image || '',
+      }))
+    }
+  }, [session])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -64,7 +74,7 @@ export default function ProfilePage() {
 
       {/* Avatar preview */}
       <div className="card mb-6 flex items-center gap-6">
-        <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-3xl font-bold text-primary overflow-hidden">
+        <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-3xl font-bold text-primary overflow-hidden border border-primary/30">
           {form.image ? (
             <img src={form.image} alt="Avatar" className="w-full h-full object-cover" />
           ) : (
@@ -72,10 +82,10 @@ export default function ProfilePage() {
           )}
         </div>
         <div>
-          <p className="font-heading font-bold text-xl">{session?.user?.name}</p>
-          <p className="text-muted">{session?.user?.email}</p>
-          <div className="flex items-center gap-1 mt-1 text-primary text-xs">
-            <Shield size={12} /> Member
+          <p className="font-heading font-bold text-xl">{session?.user?.name || 'Explorer'}</p>
+          <p className="text-muted text-sm">{session?.user?.email}</p>
+          <div className="flex items-center gap-1.5 mt-1.5 text-primary text-xs font-semibold">
+            <Shield size={13} /> Active Traveler
           </div>
         </div>
       </div>
@@ -86,8 +96,8 @@ export default function ProfilePage() {
         </h2>
 
         <div>
-          <label className="text-sm font-medium text-muted block mb-2">
-            <User size={14} className="inline mr-1" /> Display Name
+          <label htmlFor="profile-name" className="label-base">
+            <User size={14} className="inline mr-1 text-primary" /> Display Name
           </label>
           <input
             id="profile-name"
@@ -101,20 +111,20 @@ export default function ProfilePage() {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-muted block mb-2">
-            <Mail size={14} className="inline mr-1" /> Email (read-only)
+          <label className="label-base">
+            <Mail size={14} className="inline mr-1 text-primary" /> Email address (read-only)
           </label>
           <input
             type="email"
             value={session?.user?.email || ''}
             disabled
-            className="input-base opacity-50 cursor-not-allowed"
+            className="input-base opacity-50 cursor-not-allowed bg-surface"
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium text-muted block mb-2">
-            <Image size={14} className="inline mr-1" /> Profile Photo URL
+          <label htmlFor="profile-image" className="label-base">
+            <ImageIcon size={14} className="inline mr-1 text-primary" /> Profile Photo URL
           </label>
           <input
             id="profile-image"
@@ -122,7 +132,7 @@ export default function ProfilePage() {
             type="url"
             value={form.image}
             onChange={handleChange}
-            placeholder="https://..."
+            placeholder="https://images.unsplash.com/..."
             className="input-base"
           />
         </div>
@@ -155,7 +165,7 @@ export default function ProfilePage() {
           id="save-profile-btn"
           type="submit"
           disabled={loading}
-          className="btn-primary w-full flex items-center justify-center gap-2"
+          className="btn-primary w-full flex items-center justify-center gap-2 py-3"
         >
           {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={16} /> Save Changes</>}
         </button>
@@ -163,7 +173,7 @@ export default function ProfilePage() {
 
       {/* Danger zone */}
       <div className="card border-danger/30 bg-danger/5">
-        <h2 className="font-heading font-semibold text-lg text-danger mb-3">⚠️ Danger Zone</h2>
+        <h2 className="font-heading font-semibold text-lg text-danger mb-2">⚠️ Danger Zone</h2>
         <p className="text-muted text-sm mb-4">
           Permanently delete your account and all associated trips, stops, and activities. This cannot be undone.
         </p>

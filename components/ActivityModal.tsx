@@ -62,7 +62,7 @@ export default function ActivityModal({ stopId, onClose, onAdd }: Props) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div>
-            <label className="text-sm font-medium text-muted block mb-2">Activity Name *</label>
+            <label htmlFor="activity-name" className="label-base">Activity Name *</label>
             <input
               id="activity-name"
               name="name"
@@ -76,23 +76,25 @@ export default function ActivityModal({ stopId, onClose, onAdd }: Props) {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-muted block mb-2">Category</label>
+            <label htmlFor="activity-category" className="label-base">Category</label>
             <select
               id="activity-category"
               name="category"
               value={form.category}
               onChange={handleChange}
-              className="input-base"
+              className="input-base cursor-pointer"
             >
               {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+                <option key={c.value} value={c.value} className="bg-surface text-text">
+                  {c.label}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-muted block mb-2">Cost (USD)</label>
+              <label htmlFor="activity-cost" className="label-base">Cost (USD)</label>
               <input
                 id="activity-cost"
                 name="cost"
@@ -106,7 +108,7 @@ export default function ActivityModal({ stopId, onClose, onAdd }: Props) {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-muted block mb-2">Duration (hours)</label>
+              <label htmlFor="activity-duration" className="label-base">Duration (hours)</label>
               <input
                 id="activity-duration"
                 name="durationHours"
@@ -123,7 +125,7 @@ export default function ActivityModal({ stopId, onClose, onAdd }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-muted block mb-2">Scheduled Time</label>
+              <label htmlFor="activity-time" className="label-base">Scheduled Time</label>
               <input
                 id="activity-time"
                 name="scheduledTime"
@@ -134,7 +136,7 @@ export default function ActivityModal({ stopId, onClose, onAdd }: Props) {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-muted block mb-2">Day Number</label>
+              <label htmlFor="activity-day" className="label-base">Day Number</label>
               <input
                 id="activity-day"
                 name="dayNumber"
@@ -148,14 +150,14 @@ export default function ActivityModal({ stopId, onClose, onAdd }: Props) {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-muted block mb-2">Description (optional)</label>
+            <label htmlFor="activity-description" className="label-base">Description (optional)</label>
             <textarea
               id="activity-description"
               name="description"
               value={form.description}
               onChange={handleChange}
               rows={2}
-              placeholder="Notes about this activity..."
+              placeholder="Notes, booking links, or details..."
               className="input-base resize-none"
             />
           </div>
