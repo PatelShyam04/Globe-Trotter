@@ -1,0 +1,64 @@
+{
+  "name": "globetrotter",
+  "version": "1.0.0",
+  "description": "GlobeTrotter – Personalized Travel Planning App",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev --name init",
+    "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "db:push": "prisma db push"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PatelShyam04/Globe-Trotter.git"
+  },
+  "keywords": [
+    "travel",
+    "itinerary",
+    "planning"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PatelShyam04/Globe-Trotter/issues"
+  },
+  "homepage": "https://github.com/PatelShyam04/Globe-Trotter#readme",
+  "prisma": {
+    "seed": "ts-node --project tsconfig.seed.json prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "bcryptjs": "^3.0.3",
+    "chart.js": "^4.5.1",
+    "date-fns": "^4.4.0",
+    "lucide-react": "^1.33.0",
+    "next": "^14.2.35",
+    "next-auth": "^5.0.0-beta.32",
+    "pg": "^8.23.0",
+    "prisma": "^7.9.1",
+    "react": "^18.3.1",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "autoprefixer": "^10.5.4",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.2",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  }
+}

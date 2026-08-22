@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #0A0F1E;
+  --color-surface: #111827;
+  --color-surface2: #1F2937;
+  --color-border: #374151;
+  --color-primary: #00D4AA;
+  --color-primary-dark: #00A884;
+  --color-secondary: #FFB347;
+  --color-danger: #EF4444;
+  --color-text: #F9FAFB;
+  --color-muted: #9CA3AF;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+/* Glass card effect */
+.glass {
+  background: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(55, 65, 81, 0.5);
+}
+
+/* Glow effect */
+.glow-primary {
+  box-shadow: 0 0 20px rgba(0, 212, 170, 0.3);
+}
+.glow-secondary {
+  box-shadow: 0 0 20px rgba(255, 179, 71, 0.3);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #00D4AA 0%, #00A8FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Button base */
+.btn-primary {
+  @apply bg-primary text-bg font-semibold px-6 py-3 rounded-xl 
+    hover:bg-primary-dark transition-all duration-200 
+    hover:shadow-lg hover:shadow-primary/30 
+    active:scale-95 cursor-pointer;
+}
+
+.btn-secondary {
+  @apply bg-surface2 text-text font-medium px-6 py-3 rounded-xl 
+    border border-border hover:border-primary/50 
+    transition-all duration-200 hover:bg-surface 
+    active:scale-95 cursor-pointer;
+}
+
+.btn-danger {
+  @apply bg-danger/10 text-danger font-medium px-6 py-3 rounded-xl 
+    border border-danger/30 hover:bg-danger/20 
+    transition-all duration-200 active:scale-95 cursor-pointer;
+}
+
+/* Input base */
+.input-base {
+  @apply w-full bg-surface2 border border-border rounded-xl px-4 py-3
+    text-text placeholder-muted
+    focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20
+    transition-all duration-200;
+}
+
+/* Card */
+.card {
+  @apply bg-surface rounded-2xl border border-border p-6;
+}
+
+/* Trip card hover */
+.trip-card {
+  @apply bg-surface rounded-2xl border border-border overflow-hidden
+    hover:border-primary/40 transition-all duration-300
+    hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1;
+}
+
+/* Badge */
+.badge {
+  @apply px-3 py-1 rounded-full text-xs font-semibold;
+}
+
+/* Category colors */
+.cat-sightseeing { @apply bg-blue-500/20 text-blue-300; }
+.cat-food { @apply bg-orange-500/20 text-orange-300; }
+.cat-adventure { @apply bg-green-500/20 text-green-300; }
+.cat-transport { @apply bg-purple-500/20 text-purple-300; }
+.cat-stay { @apply bg-primary/20 text-primary; }
+.cat-other { @apply bg-gray-500/20 text-gray-300; }
+
+/* Sidebar */
+.nav-link {
+  @apply flex items-center gap-3 px-4 py-3 rounded-xl text-muted
+    hover:text-text hover:bg-surface2 transition-all duration-200 font-medium;
+}
+.nav-link.active {
+  @apply text-primary bg-primary/10 border border-primary/20;
+}
+
+/* Timeline */
+.timeline-line {
+  @apply absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/50 to-transparent;
+}
+
+/* Animation classes */
+.animate-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+}
+.modal-box {
+  @apply bg-surface border border-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in;
+}

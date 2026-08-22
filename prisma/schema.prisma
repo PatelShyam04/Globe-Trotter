@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trips     Trip[]
+}
+
+model Trip {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  coverPhoto  String?
+  isPublic    Boolean   @default(false)
+  totalBudget Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  stops       Stop[]
+}
+
+model Stop {
+  id            String     @id @default(cuid())
+  tripId        String
+  trip          Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  cityName      String
+  country       String?
+  arrivalDate   DateTime?
+  departureDate DateTime?
+  orderIndex    Int        @default(0)
+  costIndex     Float      @default(1.0)
+  activities    Activity[]
+}
+
+model Activity {
+  id            String   @id @default(cuid())
+  stopId        String
+  stop          Stop     @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  name          String
+  category      String   @default("other")
+  description   String?
+  cost          Float    @default(0)
+  durationHours Float?
+  scheduledTime String?
+  dayNumber     Int      @default(1)
+  createdAt     DateTime @default(now())
+}
+
+model City {
+  id          String  @id @default(cuid())
+  name        String
+  country     String
+  region      String
+  costIndex   Float   @default(1.0)
+  popularity  Int     @default(0)
+  imageUrl    String?
+  description String?
+}
