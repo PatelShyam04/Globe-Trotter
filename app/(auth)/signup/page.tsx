@@ -56,6 +56,22 @@ export default function SignupPage() {
     setAvatarIndex(index)
   }
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB')
+        return
+      }
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setForm((prev) => ({ ...prev, image: reader.result as string }))
+        toast.success('Photo uploaded!')
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.firstName.trim()) {
@@ -154,28 +170,37 @@ export default function SignupPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Top Circular Photo Avatar */}
           <div className="flex flex-col items-center justify-center mb-2">
-            <div className="relative group cursor-pointer">
-              <div className="w-24 h-24 rounded-full bg-surface2 border-2 border-primary/40 flex items-center justify-center overflow-hidden shadow-lg shadow-primary/10 group-hover:border-primary transition-all">
-                {form.image || AVATARS[avatarIndex] ? (
-                  <img
-                    src={form.image || AVATARS[avatarIndex]}
-                    alt="User photo"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-muted">
-                    <Camera size={24} />
-                    <span className="text-xs font-semibold mt-1">Photo</span>
-                  </div>
-                )}
-              </div>
+            <div className="relative group">
+              <label htmlFor="photo-upload" className="cursor-pointer block">
+                <div className="w-24 h-24 rounded-full bg-surface2 border-2 border-primary/40 flex items-center justify-center overflow-hidden shadow-lg shadow-primary/10 group-hover:border-primary transition-all">
+                  {form.image || AVATARS[avatarIndex] ? (
+                    <img
+                      src={form.image || AVATARS[avatarIndex]}
+                      alt="User photo"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-muted">
+                      <Camera size={24} />
+                      <span className="text-xs font-semibold mt-1">Photo</span>
+                    </div>
+                  )}
+                </div>
+              </label>
               <label
-                htmlFor="photo-url"
-                className="absolute bottom-0 right-0 p-1.5 rounded-full bg-primary text-bg shadow-md cursor-pointer hover:bg-primary-dark transition-colors"
-                title="Select / Paste photo"
+                htmlFor="photo-upload"
+                className="absolute bottom-0 right-0 p-2 rounded-full bg-primary text-bg shadow-md cursor-pointer hover:bg-primary-dark transition-colors"
+                title="Upload photo from device"
               >
                 <Camera size={14} />
               </label>
+              <input
+                id="photo-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
             </div>
 
             {/* Quick Avatar Pickers */}

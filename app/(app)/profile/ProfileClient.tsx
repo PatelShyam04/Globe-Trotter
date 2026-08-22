@@ -93,8 +93,38 @@ export default function ProfileClient({ user: initialUser, trips }: Props) {
   const preplannedTrips = trips.filter((t) => !t.endDate || new Date(t.endDate) >= now)
   const previousTrips = trips.filter((t) => t.endDate && new Date(t.endDate) < now)
 
+  const AVATARS = [
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
+  ]
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB')
+        return
+      }
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setForm((prev) => ({ ...prev, image: reader.result as string }))
+        toast.success('Photo loaded! Click "Save Changes" to apply.')
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleAvatarSelect = (url: string) => {
+    setForm((prev) => ({ ...prev, image: url }))
+    toast.success('Avatar selected! Click "Save Changes" to apply.')
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -202,16 +232,38 @@ export default function ProfileClient({ user: initialUser, trips }: Props) {
       <div className="card !p-6 md:!p-8 border border-border shadow-2xl flex flex-col md:flex-row items-center md:items-start gap-8">
         {/* Left: Circular Image of the User */}
         <div className="flex flex-col items-center flex-shrink-0">
-          <div className="w-32 h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-tr from-primary/30 to-secondary/30 border-3 border-primary/50 flex items-center justify-center text-4xl font-bold text-primary overflow-hidden shadow-xl shadow-primary/10 relative group">
-            {form.image || user?.image ? (
-              <img
-                src={form.image || user?.image!}
-                alt={user?.name || 'User'}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              user?.name?.charAt(0)?.toUpperCase() || 'U'
-            )}
+          <div className="relative group">
+            <label htmlFor="profile-direct-upload" className="cursor-pointer block">
+              <div className="w-32 h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-tr from-primary/30 to-secondary/30 border-3 border-primary/50 flex items-center justify-center text-4xl font-bold text-primary overflow-hidden shadow-xl shadow-primary/10 relative group hover:border-primary transition-all">
+                {form.image || user?.image ? (
+                  <img
+                    src={form.image || user?.image!}
+                    alt={user?.name || 'User'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  user?.name?.charAt(0)?.toUpperCase() || 'U'
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-semibold gap-1">
+                  <Camera size={22} />
+                  <span>Change Photo</span>
+                </div>
+              </div>
+            </label>
+            <label
+              htmlFor="profile-direct-upload"
+              className="absolute bottom-1 right-1 p-2 rounded-full bg-primary text-bg shadow-lg cursor-pointer hover:bg-primary-dark transition-colors"
+              title="Upload photo from computer/phone"
+            >
+              <Camera size={16} />
+            </label>
+            <input
+              id="profile-direct-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
           </div>
           <span className="badge bg-primary/15 text-primary text-xs font-semibold mt-3 flex items-center gap-1">
             <Shield size={12} /> Verified Traveler
@@ -308,17 +360,63 @@ export default function ProfileClient({ user: initialUser, trips }: Props) {
                     className="input-base !py-2 text-sm"
                   />
                 </div>
-                <div>
-                  <label htmlFor="edit-image" className="label-base text-xs">Photo URL</label>
-                  <input
-                    id="edit-image"
-                    name="image"
-                    type="url"
-                    value={form.image}
-                    onChange={handleChange}
-                    placeholder="https://..."
-                    className="input-base !py-2 text-sm"
-                  />
+                <div className="sm:col-span-2 space-y-2 p-3 bg-surface2/40 rounded-xl border border-border/60">
+                  <div className="flex items-center justify-between">
+                    <label className="label-base text-xs font-bold text-text mb-0">
+                      Profile Picture / Avatar
+                    </label>
+                    <label
+                      htmlFor="form-file-upload"
+                      className="btn-secondary !py-1 !px-2.5 text-xs flex items-center gap-1.5 cursor-pointer font-semibold"
+                    >
+                      <Camera size={13} />
+                      Choose Image File
+                    </label>
+                    <input
+                      id="form-file-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </div>
+
+                  {/* Preset Avatars */}
+                  <div>
+                    <span className="text-[11px] text-muted block mb-1.5">Or choose a preset traveler avatar:</span>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                      {AVATARS.map((avatarUrl, idx) => {
+                        const isSelected = form.image === avatarUrl
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleAvatarSelect(avatarUrl)}
+                            className={`w-9 h-9 rounded-full overflow-hidden border-2 flex-shrink-0 transition-all cursor-pointer ${
+                              isSelected
+                                ? 'border-primary ring-2 ring-primary/40 scale-110 shadow-md'
+                                : 'border-border opacity-70 hover:opacity-100 hover:border-primary/50'
+                            }`}
+                          >
+                            <img src={avatarUrl} alt="Avatar option" className="w-full h-full object-cover" />
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Or Custom URL */}
+                  <div>
+                    <input
+                      id="edit-image"
+                      name="image"
+                      type="text"
+                      value={form.image}
+                      onChange={handleChange}
+                      placeholder="Or paste an image URL (https://...)"
+                      className="input-base !py-1.5 text-xs"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label htmlFor="edit-city" className="label-base text-xs">City</label>
